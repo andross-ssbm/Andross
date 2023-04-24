@@ -12,7 +12,7 @@ RUN apt-get install -y git cron vim
 RUN git clone https://github.com/ConstObject/Andross.git
 
 # Set working directory to the cloned directory
-WORKDIR /Andross
+WORKDIR /Andross/Andross
 
 # Update pip and install required dependencies
 RUN pip install --upgrade pip
