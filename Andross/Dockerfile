@@ -25,6 +25,7 @@ ENV DB_PORT=<YOUR_DB_PORT>
 ENV DB_NAME=<YOUR_DB_NAME>
 ENV DB_USER=<YOUR_DB_USER>
 ENV DB_PASSWORD=<YOUR_DB_PASSWORD>
+ENV DISCORD_COMMAND_PREFIX=$
 ENV DISCORD_TOKEN=<YOUR_DISCORD_TOKEN>
 
 # Create cron job to run create_snapshot.py, every 20 minutes and then every once a day at midnight, then run cron
