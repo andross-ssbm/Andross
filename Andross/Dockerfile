@@ -29,6 +29,7 @@ ENV DB_PASSWORD=<YOUR_DB_PASSWORD>
 RUN crontab crontab
 RUN touch /var/log/cron.log
 
+RUN mv entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
