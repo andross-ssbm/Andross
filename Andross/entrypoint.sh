@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$1" == "start" ]; then
-    python app.py
+    python3.10 -u main.py
 elif [ "$1" == "shell" ]; then
     /bin/bash
 else
