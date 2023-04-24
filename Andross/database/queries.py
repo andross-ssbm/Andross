@@ -29,6 +29,46 @@ def get_users_latest_placement(user: User) -> int:
         return latest_leaderboard_by_date_id.position
 
 
+def get_writeable_before_leaderboard(before: datetime) -> Tuple[bool, list[list[Any]] | None]:
+    logger.info('get_writeable_leaderboard')
+
+    def _generate_latest_entry(model):
+        return (
+            select(model.user_id, func.max(model.entry_time).label('max_entry_time'))
+            .where(model.entry_time.between(datetime(year=2021, month=1, day=1), before))
+            .group_by(model.user_id)
+            .alias()
+        )
+
+    latest_elo = _generate_latest_entry(Elo)
+
+    latest_win_losses = _generate_latest_entry(WinLoss)
+
+    latest_drp = _generate_latest_entry(DRP)
+
+    with create_session() as session:
+        # Build the query
+        query = (
+            session.query(User.id, Elo.elo, WinLoss.wins, WinLoss.losses, DRP.placement)
+            .join(latest_elo, latest_elo.c.user_id == User.id)
+            .join(Elo, and_(Elo.user_id == latest_elo.c.user_id, Elo.entry_time == latest_elo.c.max_entry_time))
+            .outerjoin(latest_win_losses, latest_win_losses.c.user_id == User.id)
+            .outerjoin(WinLoss, and_(WinLoss.user_id == latest_win_losses.c.user_id,
+                                     WinLoss.entry_time == latest_win_losses.c.max_entry_time))
+            .outerjoin(latest_drp, latest_drp.c.user_id == User.id)
+            .outerjoin(DRP, and_(DRP.user_id == latest_drp.c.user_id, DRP.entry_time == latest_drp.c.max_entry_time))
+            .order_by(Elo.elo.desc())
+        )
+
+        logger.debug(f'query: {query}')
+
+        return_value = session.execute(query).all()
+    if not return_value:
+        return False, None
+
+    return True, [list(row) for row in return_value]
+
+
 def get_writeable_leaderboard() -> Tuple[bool, list[list[Any]] | None]:
     logger.info('get_writeable_leaderboard')
 

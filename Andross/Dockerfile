@@ -31,6 +31,7 @@ ENV DISCORD_TOKEN=<YOUR_DISCORD_TOKEN>
 # Create cron job to run create_snapshot.py, every 20 minutes and then every once a day at midnight, then run cron
 RUN crontab crontab
 RUN touch /var/log/cron.log
+RUN tail -f /var/log/cron.log
 
 RUN mv entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

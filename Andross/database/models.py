@@ -1,10 +1,11 @@
 import os
 import random
 from datetime import datetime
+from decimal import Decimal
 import logging
 
 from sqlalchemy import create_engine, Integer, BigInteger, \
-    String, Numeric, DateTime, Index, ForeignKey, func, and_, select
+    String, DateTime, Index, ForeignKey, func, and_, select, FLOAT, Double
 from sqlalchemy.orm import relationship, DeclarativeBase, sessionmaker, Mapped, mapped_column, Session
 
 from Andross.slippi.slippi_characters import SlippiCharacterId
@@ -18,7 +19,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 # create the database engine
-engine = create_engine(f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}', echo=False)
+engine = create_engine(f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}', echo=True)
 
 
 def create_session() -> Session:
@@ -40,13 +41,19 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(14), nullable=False)
     main_id: Mapped[int] = mapped_column(Integer, ForeignKey('character_list.id'), server_default='256', default=256)
     slippi_id: Mapped[int] = mapped_column(BigInteger, server_default='0', default=0)
-    latest_elo: Mapped[float] = mapped_column(Numeric(precision=10, scale=6), nullable=False,
+    latest_elo: Mapped[float] = mapped_column(Double, nullable=False,
                                               server_default='1100.0', default=0)
     latest_wins: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0', default=0)
     latest_losses: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0', default=0)
     latest_drp: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0', default=0)
 
     main_character: Mapped['CharacterList'] = relationship('CharacterList', lazy='joined')
+    elo_entries: Mapped[list['Elo']] = relationship('Elo')
+    win_loss_entries: Mapped[list['WinLoss']] = relationship('WinLoss')
+    drp_entries: Mapped[list['DRP']] = relationship('DRP')
+    dgp_entries: Mapped[list['DGP']] = relationship('DGP')
+    characters_entries: Mapped[list['CharactersEntry']] = relationship('CharactersEntry')
+    leaderboard_entries: Mapped[list['Leaderboard']] = relationship('Leaderboard')
 
     __table_args__ = (
         Index('idx_users_id', id),
@@ -81,7 +88,7 @@ class Elo(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.id'), nullable=False)
-    elo: Mapped[float] = mapped_column(Numeric(precision=10, scale=6), nullable=False, server_default='0.0', default=0)
+    elo: Mapped[float] = mapped_column(Double, nullable=False, server_default='0.0', default=0)
     entry_time: Mapped[datetime] = mapped_column(DateTime, ForeignKey('entry_date.entry_time'), nullable=False)
 
     __table_args__ = (
@@ -139,7 +146,8 @@ class Leaderboard(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.id'), nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0', default=0)
-    elo: Mapped[float] = mapped_column(Numeric(precision=10, scale=6), nullable=False, server_default='0.0', default=0)
+    elo: Mapped[float] = mapped_column(Double, nullable=False,
+                                       server_default='0.0', default=0)
     wins: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0', default=0)
     losses: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0', default=0)
     drp: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0', default=0)

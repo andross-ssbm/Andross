@@ -11,7 +11,7 @@ from Andross.database.models import create_session, User, EntryDate
 from Andross.database.database_slippi import update_database
 from Andross.database.queries import get_users_latest_placement, get_leaderboard_standard, leaderboard_type
 from Andross.slippi.slippi_ranks import get_rank
-from Andross.slippi.slippi_api import get_player_ranked_data
+from Andross.slippi.slippi_api import get_player_ranked_data, is_valid_connect_code
 
 logger = logging.getLogger(f'andross.{__name__}')
 
@@ -203,6 +203,11 @@ class StatsCog(commands.Cog, name='Stats'):
     @commands.command(name='reg', help='Registers a user for the bot')
     async def __reg_user(self, ctx: commands.Context, user_connect_code: str, name: str = None):
         logger.info(f'__reg_user: {ctx}, {user_connect_code}, {name}')
+
+        if not is_valid_connect_code(user_connect_code.lower()):
+            await ctx.send(f'You\'ve entered a invalid connect code, please enter a valid connect code')
+            await ctx.send('reg')
+            return
 
         # Attempt to set name if none is given
         if not name:

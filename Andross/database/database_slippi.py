@@ -103,13 +103,14 @@ def update_slippi_id(session, user: User, slippi_user: SlippiUser) -> bool:
 
 
 def update_elo(session, user: User, slippi_user: SlippiUser, entry_time: EntryDate) -> bool:
-    if user.latest_elo != slippi_user.ranked_profile.rating_ordinal:
+    if abs(user.latest_elo - slippi_user.ranked_profile.rating_ordinal) > 0.0001:
         elo_entry = Elo(user_id=user.id,
                         elo=slippi_user.ranked_profile.rating_ordinal,
                         entry_time=entry_time.entry_time)
 
         try:
             user.latest_elo = elo_entry.elo
+            session.commit()
             session.add(elo_entry)
             session.commit()
             return True
@@ -135,7 +136,9 @@ def update_win_loss(session, user: User, slippi_user: SlippiUser, entry_time: En
 
         try:
             user.latest_wins = win_loss_entry.wins
+            session.commit()
             user.latest_losses = win_loss_entry.losses
+            session.commit()
             session.add(win_loss_entry)
             session.commit()
             return True
@@ -160,6 +163,7 @@ def update_drp(session, user: User, slippi_user: SlippiUser, entry_time: EntryDa
 
         try:
             user.latest_drp = drp_entry.placement
+            session.commit()
             session.add(drp_entry)
             session.commit()
             return True
@@ -246,6 +250,7 @@ def update_character_entry(session, user: User, slippi_user: SlippiUser, entry_t
                                         user_id=user.id,
                                         game_count=character.game_count,
                                         entry_time=entry_time.entry_time))
+            session.commit()
         main_id = get_character_id(max(slippi_user.ranked_profile.characters, key=lambda c: c.game_count).character,
                                    dk_claus=True)
         user.main_id = main_id

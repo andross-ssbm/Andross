@@ -97,7 +97,7 @@ def test_slippi_user_with_data_1(user_from_data):
     assert user.display_name == 'Bramus'
     assert user.connect_code == 'BRAZ#13'
     assert user.ranked_profile.id == 2282662
-    assert user.ranked_profile.rating_ordinal == Decimal('2232.203952')
+    assert user.ranked_profile.rating_ordinal == 2232.203952
     assert user.ranked_profile.rating_update_count == 164
     assert user.ranked_profile.wins == 98
     assert user.ranked_profile.losses == 66
@@ -113,7 +113,7 @@ def test_slippi_user_with_data_2(user_from_data):
     assert user.display_name == 'IDCrisis'
     assert user.connect_code == 'IDCR#192'
     assert user.ranked_profile.id == 7334568
-    assert user.ranked_profile.rating_ordinal == Decimal('1100')
+    assert user.ranked_profile.rating_ordinal == 1100
     assert user.ranked_profile.rating_update_count == 0
     assert user.ranked_profile.wins == 0
     assert user.ranked_profile.losses == 0
@@ -126,7 +126,7 @@ def test_slippi_user_with_data_3(user_from_data):
     assert user.display_name == ''
     assert user.connect_code == ''
     assert user.ranked_profile.id is None
-    assert user.ranked_profile.rating_ordinal == Decimal('1100')
+    assert user.ranked_profile.rating_ordinal == 1100
     assert user.ranked_profile.rating_update_count is None
     assert user.ranked_profile.wins == 0
     assert user.ranked_profile.losses == 0

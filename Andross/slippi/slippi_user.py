@@ -24,7 +24,7 @@ class Characters:
 @dataclass
 class RankedNetplayProfile:
     id: int = None
-    rating_ordinal: Decimal = 1100
+    rating_ordinal: float = 1100
     rating_update_count: int = None
     wins: int = 0
     losses: int = 0
@@ -71,7 +71,7 @@ class SlippiUser:
 
         self.ranked_profile = RankedNetplayProfile(
             id=int(ranked_data['id'], 16),
-            rating_ordinal=Decimal(str(ranked_data['ratingOrdinal'])),
+            rating_ordinal=ranked_data['ratingOrdinal'],
             rating_update_count=ranked_data['ratingUpdateCount'],
             wins=ranked_data['wins'] or 0,
             losses=ranked_data['losses'] or 0,
