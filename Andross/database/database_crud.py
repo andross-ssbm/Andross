@@ -3,7 +3,7 @@ import logging
 
 from sqlalchemy.exc import IntegrityError, DataError, OperationalError
 
-from Andross.database.models2 import User, EntryDate, CharacterList, Elo, WinLoss, \
+from Andross.database.models import User, EntryDate, CharacterList, Elo, WinLoss, \
     DRP, DGP, Leaderboard, CharactersEntry, create_session
 
 

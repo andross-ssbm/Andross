@@ -1,36 +1,15 @@
 import datetime
 import logging
+import os
 import sys
 
-from database.models2 import initialize, create_session, User, EntryDate, get_users_leaderboard, get_users_leaderboard_correct, get_leaderboard_between
-from database.database_crud import generic_create
-from database.database_slippi import update_database
-from slippi.slippi_user import SlippiUser
-
-format_string = '%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)'
-
-
-class CustomFormatter(logging.Formatter):
-
-    grey = "\x1b[38;20m"
-    yellow = "\x1b[33;20m"
-    red = "\x1b[31;20m"
-    bold_red = "\x1b[31;1m"
-    reset = "\x1b[0m"
-    format = format_string
-
-    FORMATS = {
-        logging.DEBUG: grey + format + reset,
-        logging.INFO: grey + format + reset,
-        logging.WARNING: yellow + format + reset,
-        logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
-    }
-
-    def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno)
-        formatting = logging.Formatter(log_fmt)
-        return formatting.format(record)
+from database.models import initialize, create_session, User, EntryDate, get_users_leaderboard, Leaderboard
+from database.queries import get_leaderboard_quick, get_leaderboard_standard, get_leaderboard_between, get_writeable_leaderboard
+from database.database_slippi import update_leaderboard, update_database
+from decimal import Decimal
+from slippi.slippi_ranks import get_rank
+from discord_bot.bot import bot
+from custom_logging import CustomFormatter, format_string
 
 
 logger = logging.getLogger('andross')
@@ -55,8 +34,11 @@ def main():
 
     initialize()
 
-    # update_database()
     logger.info('Database initialized')
+
+    update_database()
+
+    bot.run(os.getenv('DISCORD_TOKEN'))
 
 
 if __name__ == '__main__':

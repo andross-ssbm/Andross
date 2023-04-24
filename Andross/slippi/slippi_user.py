@@ -86,3 +86,15 @@ class SlippiUser:
         if (self.ranked_profile.wins + self.ranked_profile.losses) < 5:
             return 'None'
         return get_rank(self.ranked_profile.rating_ordinal, self.ranked_profile.daily_regional_placement)
+
+    def get_user_profile_page(self) -> str:
+        return f'https://slippi.gg/user/{self.connect_code.replace("#", "-")}'
+
+    def get_main_character(self) -> Characters:
+        character_to_return = None
+        highest_game_count = 0
+        for guy in self.ranked_profile.characters:
+            if guy.game_count > highest_game_count:
+                character_to_return = guy
+
+        return character_to_return

@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import Any
+from decimal import Decimal
 import logging
 
 from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError, DataError, OperationalError
 
-from Andross.database.models2 import User, EntryDate, Elo, WinLoss, DRP, DGP, \
-    CharactersEntry, create_session, generate_latest_entry
+from Andross.database.models import User, EntryDate, Elo, WinLoss, DRP, DGP, \
+    CharactersEntry, Leaderboard, create_session, generate_latest_entry
 from Andross.database.database_crud import generic_create
 
 from Andross.slippi.slippi_api import get_player_ranked_data
@@ -15,10 +15,8 @@ from Andross.slippi.slippi_characters import get_character_id, get_character_nam
 
 logger = logging.getLogger(f'andross.{__name__}')
 
-crud2 = None
 
-
-def get_all_users_ranked_list(session) -> bool | list[User, SlippiUser | Any] | bool:
+def get_all_users_ranked_list(session) -> bool | list[[User, SlippiUser]]:
     return_value = []
     try:
         users = session.query(User).all()
@@ -31,6 +29,57 @@ def get_all_users_ranked_list(session) -> bool | list[User, SlippiUser | Any] | 
     except OperationalError as e:
         logger.exception(f'Exception connecting to database: {e}')
         return False
+
+
+def update_leaderboard() -> bool:
+    ranked_data = []
+    with create_session() as session:
+        current_time = datetime.utcnow().replace(microsecond=0)
+        results = generic_create(model=EntryDate, session=session, entry_time=current_time)
+        date_entry = results[1]
+        if not results[0]:
+            logger.error(f'Unable to create date_entry: {current_time}')
+            return False
+
+        ranked_data = get_all_users_ranked_list(session)
+
+        if not ranked_data:
+            logger.warning(f'Unable to get users or slippi data')
+
+        logger.info('Sorting users')
+        sorted_ranked_data = sorted([(user.id, slippi_user) for user, slippi_user in ranked_data],
+                                    key=lambda x: x[1].ranked_profile.rating_ordinal, reverse=True)
+
+        counter = 1
+        for user in sorted_ranked_data:
+            try:
+                local_id = user[0]
+                slippi_data = user[1]
+
+                if slippi_data.ranked_profile.wins or slippi_data.ranked_profile.losses:
+                    test = Leaderboard(user_id=local_id,
+                                       position=counter,
+                                       elo=slippi_data.ranked_profile.rating_ordinal,
+                                       wins=slippi_data.ranked_profile.wins,
+                                       losses=slippi_data.ranked_profile.losses,
+                                       drp=slippi_data.ranked_profile.daily_regional_placement,
+                                       entry_time=current_time)
+                    session.add(test)
+                    session.commit()
+
+                    counter += 1
+
+            except (IntegrityError, DataError) as e:
+                logger.exception(f'Exception running operation: {e}')
+                session.rollback()
+                return False
+            except OperationalError as e:
+                logger.exception(f'Exception connecting to database: {e}')
+                return False
+            except Exception as e:
+                logger.exception(f'Unknown exception: {e}')
+                session.rollback()
+                raise e
 
 
 def update_slippi_id(session, user: User, slippi_user: SlippiUser) -> bool:
@@ -214,7 +263,8 @@ def update_character_entry(session, user: User, slippi_user: SlippiUser, entry_t
         raise e
 
 
-def update_database() -> bool:
+def update_database(user: int = None) -> bool:
+    logger.info('update_database')
     ranked_data = []
     with create_session() as session:
 
@@ -226,10 +276,15 @@ def update_database() -> bool:
             logger.error(f'Unable to create date_entry: {current_time}')
             return False
 
-        ranked_data = get_all_users_ranked_list(session)
+        if not user:
+            ranked_data = get_all_users_ranked_list(session)
+        else:
+            user = session.query(User).filter(User.id == user).first()
+            ranked_data = [[user, get_player_ranked_data(user.cc)]]
 
         if not ranked_data:
             logger.warning(f'Unable to get users or slippi data')
+            return False
 
         for data in ranked_data:
             local_data = data[0]
@@ -257,3 +312,5 @@ def update_database() -> bool:
                 logger.warning(f'Unable to update character_entry: {local_data}')
 
         session.commit()
+        logger.info('Updated database')
+        return True
