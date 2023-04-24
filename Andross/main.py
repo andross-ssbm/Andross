@@ -3,11 +3,7 @@ import logging
 import os
 import sys
 
-from database.models import initialize, create_session, User, EntryDate, get_users_leaderboard, Leaderboard
-from database.queries import get_leaderboard_quick, get_leaderboard_standard, get_leaderboard_between, get_writeable_leaderboard
-from database.database_slippi import update_leaderboard, update_database
-from decimal import Decimal
-from slippi.slippi_ranks import get_rank
+from database.models import initialize
 from discord_bot.bot import bot
 from custom_logging import CustomFormatter, format_string
 
@@ -35,8 +31,6 @@ def main():
     initialize()
 
     logger.info('Database initialized')
-
-    update_database()
 
     bot.run(os.getenv('DISCORD_TOKEN'))
 
