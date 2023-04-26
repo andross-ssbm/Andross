@@ -1,7 +1,7 @@
 from sqlalchemy import select, func, and_
 from datetime import datetime
-from decimal import Decimal
 from typing import Tuple, Any
+from sqlalchemy.exc import IntegrityError, OperationalError, DataError
 import logging
 
 from Andross.database.models import create_session, \
@@ -10,23 +10,44 @@ from Andross.database.models import create_session, \
 logger = logging.getLogger(f'andross.{__name__}')
 
 
-leaderboard_type = [str, str, Decimal, int, int, int, int]  # name, cc, elo, wins, losses, drp, user.id
+leaderboard_type = [str, str, float, int, int, int, int]  # name, cc, elo, wins, losses, drp, user.id
+
+
+def get_users_latest_characters(user: User) -> [bool, CharactersEntry | None]:
+    logger.info(f'get_users_latest_characters: {user}')
+
+    with create_session() as session:
+        max_entry_time = session.query(func.max(CharactersEntry.entry_time)).filter(
+            CharactersEntry.user_id == user.id).scalar()
+
+        # Query the CharactersEntry table to get the entry with the highest entry_time
+        query = session.query(CharactersEntry)\
+            .filter(CharactersEntry.user_id == user.id, CharactersEntry.entry_time == max_entry_time)
+        results = query.all()
+        if not results:
+            return False, None
+
+        return True, results
 
 
 def get_users_latest_placement(user: User) -> int:
     logger.info(f'get_users_latest_placement: {user}')
 
     with create_session() as session:
-        latest_leaderboard_by_date_id = (
-            session.query(Leaderboard)
-            .filter(Leaderboard.user_id == user.id)
-            .group_by(Leaderboard.user_id)
-            .having(func.max(Leaderboard.entry_time))
-            .order_by(func.max(Leaderboard.entry_time).desc()).first()
-        )
-        if not latest_leaderboard_by_date_id:
+        try:
+            return_results = session.query(Leaderboard)\
+                .filter(Leaderboard.user_id == user.id)\
+                .order_by(Leaderboard.entry_time.desc()).first()
+            if not return_results:
+                return 0
+            return return_results.position
+        except (IntegrityError, DataError) as e:
+            logger.error(f'Error running operation: {e}')
+            session.rollback()
             return 0
-        return latest_leaderboard_by_date_id.position
+        except OperationalError as e:
+            logger.error(f'Error connecting to database: {e}')
+            return 0
 
 
 def get_writeable_before_leaderboard(before: datetime) -> Tuple[bool, list[list[Any]] | None]:
@@ -169,23 +190,34 @@ def get_leaderboard_standard() -> Tuple[bool, list[leaderboard_type] | None]:
 
     leaderboard_return = []
     with create_session() as session:
-        leaderboard = session.query(
-            User.name,
-            User.cc,
-            Elo.elo,
-            User.latest_wins,
-            User.latest_losses,
-            User.latest_drp,
-            User.id
-            )\
-            .join(Elo, User.id == Elo.user_id)\
-            .filter(Elo.entry_time == session.query(func.max(Elo.entry_time))
-                    .filter(Elo.user_id == User.id).scalar()).order_by(Elo.elo.desc()).all()
+        try:
+            latest_elo = generate_latest_entry(Elo)
 
-    if not leaderboard:
-        return False, None
+            leaderboard = session.query(
+                User.name,
+                User.cc,
+                Elo.elo,
+                User.latest_wins,
+                User.latest_losses,
+                User.latest_drp,
+                User.id
+            ) \
+                .join(latest_elo, latest_elo.c.user_id == User.id) \
+                .join(Elo, and_(User.id == Elo.user_id, Elo.entry_time == latest_elo.c.max_entry_time)) \
+                .order_by(Elo.elo.desc()).all()
 
-    return True, leaderboard
+            if not leaderboard:
+                return False, None
+
+            return True, leaderboard
+
+        except (IntegrityError, DataError) as e:
+            logger.error(f'Error running operation: {e}')
+            session.rollback()
+            return False, None
+        except OperationalError as e:
+            logger.error(f'Error connecting to database: {e}')
+            return False, None
 
 
 

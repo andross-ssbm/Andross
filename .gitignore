@@ -162,4 +162,5 @@ cython_debug/
 /ranked.ini
 /log.log
 *.csv
+*.png
 /Andross/data_export_test/

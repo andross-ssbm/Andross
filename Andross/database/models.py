@@ -1,7 +1,5 @@
 import os
-import random
 from datetime import datetime
-from decimal import Decimal
 import logging
 
 from sqlalchemy import create_engine, Integer, BigInteger, \
@@ -19,7 +17,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 # create the database engine
-engine = create_engine(f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}', echo=True)
+engine = create_engine(f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}', echo=False)
 
 
 def create_session() -> Session:
@@ -183,20 +181,6 @@ def generate_latest_entry(model):
         .group_by(model.user_id)
         .alias()
         )
-
-
-def get_users_leaderboard():
-    leaderboard_text = []
-    counter = 1
-    with create_session() as session:
-        users = session.query(User).order_by(User.latest_elo.desc()).all()
-        for user in users:
-            if user.latest_elo != 1100:
-                leaderboard_text.append(f'{counter}. {user.name} | {user.latest_elo:.2f} '
-                                        f'({user.latest_wins}/{user.latest_losses}) {get_rank(user.latest_elo)}')
-                counter += 1
-
-    return leaderboard_text
 
 
 def create_character_list():

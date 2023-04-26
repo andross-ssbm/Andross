@@ -22,7 +22,7 @@ class InfoCog(commands.Cog, name='Info'):
     @commands.command(name='git', help='Gives link to git repository')
     async def __showGit(self, ctx: commands.Context):
         embed = discord.Embed(title='Github',
-                              url=f'https://github.com/ConstObject/Michigan-Melee-Slippi-Ranked-Bot',
+                              url=f'https://github.com/ConstObject/Andross',
                               description='Link to project repository.',
                               colour=discord.Colour.green())
         await ctx.send(embed=embed)

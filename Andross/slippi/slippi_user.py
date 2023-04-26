@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from decimal import Decimal
 
 from Andross.slippi.slippi_ranks import get_rank
 from Andross.slippi.slippi_characters import get_character_id, get_character_url
@@ -95,6 +94,7 @@ class SlippiUser:
         highest_game_count = 0
         for guy in self.ranked_profile.characters:
             if guy.game_count > highest_game_count:
+                highest_game_count = guy.game_count
                 character_to_return = guy
 
         return character_to_return

@@ -12,7 +12,8 @@ bot = commands.Bot(command_prefix=os.environ.get('DISCORD_COMMAND_PREFIX'), inte
 
 extensions_list = [
     'info',
-    'stats'
+    'stats',
+    'visualizer'
 ]
 
 status_messages = [

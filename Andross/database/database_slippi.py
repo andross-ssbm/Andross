@@ -1,5 +1,4 @@
 from datetime import datetime
-from decimal import Decimal
 import logging
 
 from sqlalchemy import and_

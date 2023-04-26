@@ -1,5 +1,4 @@
 import pytest
-from decimal import Decimal
 from Andross.slippi.slippi_user import SlippiUser
 
 test_data = {

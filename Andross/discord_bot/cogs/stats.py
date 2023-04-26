@@ -1,6 +1,5 @@
 import logging
 import math
-import os
 
 import discord
 from discord.ext import commands
@@ -8,10 +7,14 @@ from sqlalchemy import or_
 from zoneinfo import ZoneInfo
 
 from Andross.database.models import create_session, User, EntryDate
+from Andross.database.database_crud import get_user, create_user
 from Andross.database.database_slippi import update_database
-from Andross.database.queries import get_users_latest_placement, get_leaderboard_standard, leaderboard_type
+from Andross.database.queries import get_users_latest_placement, get_leaderboard_standard, \
+    leaderboard_type
 from Andross.slippi.slippi_ranks import get_rank
 from Andross.slippi.slippi_api import get_player_ranked_data, is_valid_connect_code
+
+from Andross.discord_bot.cogs.utils.views import UserStatsView
 
 logger = logging.getLogger(f'andross.{__name__}')
 
@@ -109,8 +112,8 @@ class StatsCog(commands.Cog, name='Stats'):
 
         with create_session() as session:
             # Attempt to get local user info
-            local_user = session.query(User).filter(or_(User.id == user_id, User.cc == cc)).first()
-            if not local_user and not is_cc:
+            results, local_user = get_user(user_id, cc)
+            if not results and not is_cc:
                 await ctx.send('Unable to get your info from database, please provide a connect_code or register with '
                                'the register command.')
                 await ctx.send_help('reg')
@@ -122,7 +125,7 @@ class StatsCog(commands.Cog, name='Stats'):
                 return
 
             if local_user:
-                user_placement = get_users_latest_placement(local_user)
+                user_placement = user_placement = get_users_latest_placement(local_user)
             else:
                 user_placement = ranked_data.ranked_profile.daily_regional_placement
 
@@ -135,7 +138,7 @@ class StatsCog(commands.Cog, name='Stats'):
             else:
                 win_rate = (wins / (wins + losses)) * 100
 
-            user_embed = discord.Embed(title=f'{ranked_data.ranked_profile.daily_regional_placement}. '
+            user_embed = discord.Embed(title=f'{user_placement}. '
                                              f'{local_user.name if local_user else ranked_data.display_name} '
                                              f'[{ranked_data.connect_code}]',
                                        url=f'{ranked_data.get_user_profile_page()}')
@@ -150,9 +153,8 @@ class StatsCog(commands.Cog, name='Stats'):
             user_embed.add_field(name='Loses', value=losses)
             user_embed.add_field(name='Win-rate', value=f'{win_rate:.2f}%')
 
-            await ctx.send(embed=user_embed)
+            await ctx.send(view=UserStatsView(ctx, user_embed, ranked_data), embed=user_embed)
 
-    # TODO Add try except for database functions
     @commands.command(name='stats', help='Simple stats display')
     async def __stats(self, ctx: commands.Context, user_info: discordMemberStr = memberstr_parameter):
         logger.info(f'__stats: {ctx}, {user_info}')
@@ -168,37 +170,35 @@ class StatsCog(commands.Cog, name='Stats'):
         if isinstance(user_info, discord.Member):
             user_id = user_info.id
 
-        with create_session() as session:
-            # Attempt to get local user info
-            local_user = session.query(User).filter(or_(User.id == user_id, User.cc == cc)).first()
-            if not local_user and not is_cc:
-                await ctx.send('Unable to get your info from database, please provide a connect_code or register with '
-                               'the register command.')
-                await ctx.send_help('reg')
-                return
+        # Attempt to get local user info
+        results, local_user = get_user(user_id, cc)
+        if not results and not is_cc:
+            await ctx.send('Unable to get your info from database, please provide a connect_code or register with '
+                           'the register command.')
+            await ctx.send_help('reg')
+            return
 
-            ranked_data = get_player_ranked_data(local_user.cc if local_user else cc)
-            if not ranked_data.ranked_profile.id:
-                await ctx.send('Was unable to get your stats from slippi.gg, please try again or check your info')
-                return
+        ranked_data = get_player_ranked_data(local_user.cc if results else cc)
+        if not ranked_data.ranked_profile.id:
+            await ctx.send('Was unable to get your stats from slippi.gg, please try again or check your info')
+            return
 
-            wins = ranked_data.ranked_profile.wins
-            losses = ranked_data.ranked_profile.losses
-            if not losses and not wins:
-                win_rate = '100%'
-            elif not wins:
-                win_rate = '0%'
-            else:
-                win_rate = f'{(wins/(wins+losses))*100:.2f}%'
+        wins = ranked_data.ranked_profile.wins
+        losses = ranked_data.ranked_profile.losses
+        if not losses and not wins:
+            win_rate = '100%'
+        elif not wins:
+            win_rate = '0%'
+        else:
+            win_rate = f'{(wins / (wins + losses)) * 100:.2f}%'
 
-            await ctx.send(f'```'
-                           f'{ranked_data.display_name} ({ranked_data.connect_code})\n'
-                           f'{ranked_data.ranked_profile.rating_ordinal:.2f} | {ranked_data.get_rank()}\n'
-                           f'{ranked_data.ranked_profile.wins}/{ranked_data.ranked_profile.losses} '
-                           f'{win_rate}'
-                           f'```')
+        await ctx.send(f'```'
+                       f'{ranked_data.display_name} ({ranked_data.connect_code})\n'
+                       f'{ranked_data.ranked_profile.rating_ordinal:.2f} | {ranked_data.get_rank()}\n'
+                       f'{ranked_data.ranked_profile.wins}/{ranked_data.ranked_profile.losses} '
+                       f'{win_rate}'
+                       f'```')
 
-    # TODO Add try except for database functions
     # TODO Improve discord parameter descriptions
     @commands.command(name='reg', help='Registers a user for the bot')
     async def __reg_user(self, ctx: commands.Context, user_connect_code: str, name: str = None):
@@ -218,27 +218,31 @@ class StatsCog(commands.Cog, name='Stats'):
             await ctx.send_help('reg')
             return
 
-        with create_session() as session:
-            user_connect_code = user_connect_code.lower()
+        user_connect_code = user_connect_code.lower()
 
-            id_check = session.query(User).filter(User.id == ctx.author.id).first()
-            if id_check:
-                await ctx.send(f'You\'ve already created an account your connect code is {id_check.cc}')
-                return
+        results, id_check = get_user(ctx.author.id)
+        if results:
+            await ctx.send(f'You\'ve already created an account your connect code is {id_check.cc}')
+            return
 
-            if session.query(User).filter(User.cc == user_connect_code).first():
-                await ctx.send(f'{user_connect_code} is already being used by someone. Please enter a different one.')
-                return
+        results, cc_check = get_user(0, user_connect_code)
+        if results:
+            await ctx.send(f'{user_connect_code} is already being used by {cc_check}. '
+                           f'Please enter a different one.')
+            return
 
-            session.add(User(id=ctx.author.id, cc=user_connect_code, name=name))
-            session.commit()
+        results = create_user(ctx.author.id, user_connect_code, name)
+        if not results:
+            await ctx.send('Unable to create user, please try again later.')
+            return
 
-            await ctx.send('Thank you for registering, we will now get your stats for you')
+        await ctx.send('Thank you for registering, we will now get your stats for you')
 
-            # Attempt to create database entries for the user
-            if update_database(ctx.author.id):
-                await ctx.send('Updated your stats.')
-                user_stats = session.query(User).filter(User.id == ctx.author.id).first()
+        # Attempt to create database entries for the user
+        if update_database(ctx.author.id):
+            await ctx.send('Updated your stats.')
+            results, user_stats = get_user(ctx.author.id)
+            if results:
                 await ctx.send(f'```'
                                f'{user_stats.name} ({user_stats.cc})\n'
                                f'{user_stats.latest_elo:.2f} | ({user_stats.latest_wins}/{user_stats.latest_losses}) |'
@@ -264,26 +268,26 @@ class StatsCog(commands.Cog, name='Stats'):
             else:
                 focus_user = ctx.author.id
 
-        leaderboard = get_leaderboard_standard()
-        if not leaderboard[0]:
+        results, leaderboard = get_leaderboard_standard()
+        if not results or not leaderboard:
             await ctx.send('Unable to get get leaderboard please try again')
 
+        latest_date = leaderboard[0].entry_time
+
         if focus_me:
-            for entry in leaderboard[1]:
+            for entry in leaderboard:
                 if entry[6] == focus_user:
-                    user_index = leaderboard[1].index(entry)
+                    user_index = leaderboard.index(entry)
                     break
 
-        leaderboard = format_leaderboard(leaderboard[1])
-        with create_session() as session:
-            latest_date = session.query(EntryDate).order_by(EntryDate.entry_time.desc()).first()
-
+        leaderboard = format_leaderboard(leaderboard)
         logger.debug(f'leaderboard: {ctx.author}, {focus_me}')
 
-        string_date = 'Failed to get date'
         if latest_date:
             string_date = latest_date.entry_time.astimezone(
                 tz=ZoneInfo('America/Detroit')).strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            string_date = 'Failed to get date'
 
         pages = math.ceil(len(leaderboard) / 10)
         cur_page = 0
