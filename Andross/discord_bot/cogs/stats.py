@@ -205,39 +205,40 @@ class StatsCog(commands.Cog, name='Stats'):
                        f'{win_rate}'
                        f'```')
 
-        @commands.command(name='edit_user', help='Edits a users info for the bot')
-        async def __edit_user(self, ctx: commands.Context, user_connect_code: str, name: str = namestr_paramater):
-            logger.info(f'__edit_user: {ctx}, {user_connect_code}, {name}')
+    @commands.command(name='edit_user', help='Edits a users info for the bot')
+    async def __edit_user(self, ctx: commands.Context, user_connect_code: str, name: str = namestr_paramater):
+        logger.info(f'__edit_user: {ctx}, {user_connect_code}, {name}')
 
-            if not is_valid_connect_code(user_connect_code.lower()):
-                await ctx.send(f'You\'ve entered a invalid connect code, please enter a valid connect code')
-                await ctx.send_help('reg')
-                return
+        if not is_valid_connect_code(user_connect_code.lower()):
+            await ctx.send(f'You\'ve entered a invalid connect code, please enter a valid connect code')
+            await ctx.send_help('reg')
+            return
 
-            if len(name) > 12:
-                await ctx.send(f'Your name must be 12 characters or less. Your name was {len(name)} characters long')
-                await ctx.send_help('reg')
-                return
+        if len(name) > 12:
+            await ctx.send(f'Your name must be 12 characters or less. Your name was {len(name)} characters long')
+            await ctx.send_help('reg')
+            return
 
-            user_connect_code = user_connect_code.lower()
+        user_connect_code = user_connect_code.lower()
 
-            results, id_check = get_user(ctx.author.id)
-            if results:
-                await ctx.send(f'You\'ve already created an account your connect code is {id_check.cc}')
-                return
+        results, id_check = get_user(ctx.author.id)
+        if not results:
+            await ctx.send(f'You\'re not registered. Please register with the $reg command instead.')
+            await ctx.send_help('reg')
+            return
 
-            results, cc_check = get_user(0, user_connect_code)
-            if results:
-                await ctx.send(f'{user_connect_code} is already being used by {cc_check}. '
-                               f'Please enter a different one.')
-                return
+        results, cc_check = get_user(0, user_connect_code)
+        if results and ctx.author.id != cc_check.id:
+            await ctx.send(f'{user_connect_code} is already being used by {cc_check}. '
+                           f'Please enter a different one.')
+            return
 
-            results = update_user(ctx.author.id, user_connect_code, name)
-            if not results:
-                await ctx.send('Unable to create user, please try again later.')
-                return
+        results = update_user(ctx.author.id, user_connect_code, name)
+        if not results:
+            await ctx.send('Unable to update user, please try again later.')
+            return
 
-            await ctx.send('Your information has now been updated.')
+        await ctx.send('Your information has now been updated.')
 
     # TODO Improve discord parameter descriptions
     @commands.command(name='reg', help='Registers a user for the bot')
