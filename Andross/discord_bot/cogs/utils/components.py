@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 
 from Andross.slippi.slippi_user import Characters
+from Andross.discord_bot.cogs.utils.colors import slippi_green
+from Andross.slippi.slippi_characters import SlippiCharacterColors
 
 
 class CharacterDropdown(discord.ui.Select):
@@ -11,9 +13,9 @@ class CharacterDropdown(discord.ui.Select):
         self.characters = character_list
         options = []
         for character in self.characters:
-            options.append(discord.SelectOption(label=character.character, description='Character you wish to view'))
+            options.append(discord.SelectOption(label=character.character))
 
-        super().__init__(placeholder='Please selects a character...',
+        super().__init__(placeholder='Please selects characters...',
                          min_values=1,
                          max_values=len(options),
                          options=options)
@@ -24,8 +26,10 @@ class CharacterDropdown(discord.ui.Select):
             total_games += sum.game_count
 
         percentage_used = (character.game_count/total_games)*100
+        color = discord.Colour.from_str(SlippiCharacterColors[character.character])
 
-        return_embed = discord.Embed(title=character.character.title(), color=discord.Colour.green())
+        return_embed = discord.Embed(title=character.character.title(),
+                                     color=color)
         return_embed.set_thumbnail(url=character.get_character_icon_url())
         return_embed.add_field(name='Game count', value=character.game_count)
         return_embed.add_field(name='\u200b', value='\u200b')

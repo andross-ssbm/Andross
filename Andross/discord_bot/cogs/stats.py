@@ -6,14 +6,15 @@ from discord.ext import commands
 from sqlalchemy import or_
 from zoneinfo import ZoneInfo
 
-from Andross.database.models import create_session, User, EntryDate
-from Andross.database.database_crud import get_user, create_user
+from Andross.database.models import create_session
+from Andross.database.database_crud import get_user, create_user, update_user
 from Andross.database.database_slippi import update_database
 from Andross.database.queries import get_users_latest_placement, get_leaderboard_standard, \
     leaderboard_type
 from Andross.slippi.slippi_ranks import get_rank
 from Andross.slippi.slippi_api import get_player_ranked_data, is_valid_connect_code
 
+from Andross.discord_bot.cogs.utils.colors import slippi_green
 from Andross.discord_bot.cogs.utils.views import UserStatsView
 
 logger = logging.getLogger(f'andross.{__name__}')
@@ -22,6 +23,10 @@ discordMemberStr = discord.Member | str
 memberstr_description = 'Connect code or a discord member, if left empty it will use the person who issues the command'
 memberstr_parameter = commands.parameter(default=lambda ctx: ctx.author, description=memberstr_description)
 memberbool_description = 'Boolean (ex. 0, 1, True, False) or a discord member'
+
+namestr_description = 'User name to display in the bot, will default to the first 12 characters of your discord name'
+namestr_paramater = commands.parameter(default=lambda ctx: ctx.author.display_name[:12],
+                                       description=namestr_description)
 
 
 def format_leaderboard(leaderboard: list[leaderboard_type]) -> list[str]:
@@ -141,7 +146,8 @@ class StatsCog(commands.Cog, name='Stats'):
             user_embed = discord.Embed(title=f'{user_placement}. '
                                              f'{local_user.name if local_user else ranked_data.display_name} '
                                              f'[{ranked_data.connect_code}]',
-                                       url=f'{ranked_data.get_user_profile_page()}')
+                                       url=f'{ranked_data.get_user_profile_page()}',
+                                       color=slippi_green)
             if ranked_data.ranked_profile.characters:
                 user_embed.set_thumbnail(url=ranked_data.get_main_character().get_character_icon_url())
             else:
@@ -199,14 +205,48 @@ class StatsCog(commands.Cog, name='Stats'):
                        f'{win_rate}'
                        f'```')
 
+        @commands.command(name='edit_user', help='Edits a users info for the bot')
+        async def __edit_user(self, ctx: commands.Context, user_connect_code: str, name: str = namestr_paramater):
+            logger.info(f'__edit_user: {ctx}, {user_connect_code}, {name}')
+
+            if not is_valid_connect_code(user_connect_code.lower()):
+                await ctx.send(f'You\'ve entered a invalid connect code, please enter a valid connect code')
+                await ctx.send_help('reg')
+                return
+
+            if len(name) > 12:
+                await ctx.send(f'Your name must be 12 characters or less. Your name was {len(name)} characters long')
+                await ctx.send_help('reg')
+                return
+
+            user_connect_code = user_connect_code.lower()
+
+            results, id_check = get_user(ctx.author.id)
+            if results:
+                await ctx.send(f'You\'ve already created an account your connect code is {id_check.cc}')
+                return
+
+            results, cc_check = get_user(0, user_connect_code)
+            if results:
+                await ctx.send(f'{user_connect_code} is already being used by {cc_check}. '
+                               f'Please enter a different one.')
+                return
+
+            results = update_user(ctx.author.id, user_connect_code, name)
+            if not results:
+                await ctx.send('Unable to create user, please try again later.')
+                return
+
+            await ctx.send('Your information has now been updated.')
+
     # TODO Improve discord parameter descriptions
     @commands.command(name='reg', help='Registers a user for the bot')
-    async def __reg_user(self, ctx: commands.Context, user_connect_code: str, name: str = None):
+    async def __reg_user(self, ctx: commands.Context, user_connect_code: str, name: str = namestr_paramater):
         logger.info(f'__reg_user: {ctx}, {user_connect_code}, {name}')
 
         if not is_valid_connect_code(user_connect_code.lower()):
             await ctx.send(f'You\'ve entered a invalid connect code, please enter a valid connect code')
-            await ctx.send('reg')
+            await ctx.send_help('reg')
             return
 
         # Attempt to set name if none is given
@@ -303,7 +343,7 @@ class StatsCog(commands.Cog, name='Stats'):
         inital_description = '\n'.join([x for x in leaderboard[page_start:page_end]])
 
         lb_embed = discord.Embed(title='Leaderboard',
-                                 description=f'```{inital_description}```', colour=discord.Colour.green())
+                                 description=f'```{inital_description}```', colour=slippi_green)
         lb_embed.set_thumbnail(url='https://avatars.githubusercontent.com/u/45867030?s=200&v=4')
         lb_embed.set_footer(text=string_date)
         lb_view = LeaderboardView(lb_embed, leaderboard, string_date, pages, 0)

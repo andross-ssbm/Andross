@@ -9,7 +9,7 @@ from Andross.discord_bot.cogs.utils.components import CharacterDropdown
 class UserStatsView(View):
 
     def __init__(self, ctx: commands.Context, embed: discord.Embed, user_slippi: SlippiUser):
-        super().__init__()
+        super().__init__(timeout=60)
 
         self._ctx = ctx
         self.embeds = [embed]

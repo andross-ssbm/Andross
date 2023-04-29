@@ -4,8 +4,10 @@ from matplotlib import pyplot, dates, cycler
 from datetime import timedelta, datetime
 
 from Andross.database.models import User, Elo
-from Andross.database.database_crud import get_all_elo
+from Andross.database.database_crud import get_all_elo, get_user
+from Andross.database.queries import get_users_latest_characters
 from Andross.slippi.slippi_ranks import rank_list
+from Andross.slippi.slippi_characters import SlippiCharacterColors
 
 
 import unicodedata
@@ -54,6 +56,44 @@ discord_dark_style = {
     'axes.titlesize': 'xx-large',
     'axes.labelsize': 'x-large'
 }
+
+
+def generate_character_usage_pie(user: User) -> None | str:
+    labels = []
+    data = []
+    colors = []
+    results, character_list = get_users_latest_characters(user)
+    if not results:
+        return
+
+    for character in character_list:
+        labels.append(character.character_info.name.title())
+        data.append(character.game_count)
+        colors.append(SlippiCharacterColors[character.character_info.name])
+
+    pyplot.style.use(discord_dark_style)
+    fig, ax = pyplot.subplots()
+    ax.pie(data, labels=labels, colors=colors, autopct='%1.1f%%', textprops={'color': discord_colors['grey']})
+    ax.set_title(user.name, fontsize='xx-large')
+
+
+    cwd = os.getcwd()
+    sub_directory = 'imgs'
+    sub_path = os.path.join(cwd, sub_directory)
+
+    if not os.path.exists(sub_path):
+        os.makedirs(sub_path)
+
+    # concatenate directory path with image file name
+    filename = f'elo_{user.id}.png'
+    filepath = os.path.join(cwd, sub_directory, filename)
+
+    # save image to specified directory
+    pyplot.savefig(filepath)
+    pyplot.clf()
+    pyplot.close(fig)
+
+    return filepath
 
 
 def generate_basic_elo_graph(user: User) -> None | Tuple[str, datetime, datetime]:

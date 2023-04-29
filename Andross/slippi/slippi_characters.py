@@ -37,6 +37,36 @@ SlippiCharacterId = {
 }
 
 
+SlippiCharacterColors = {
+    'DONKEY_KONG': '#2f1003',
+    'CAPTAIN_FALCON': '#353c5e',
+    'FOX': '#ffb242',
+    'GAME_AND_WATCH': '#000000',
+    'KIRBY': '#ffbed8',
+    'BOWSER': '#376218',
+    'LINK': '#073f07',
+    'LUIGI': '#10b91a',
+    'MARIO': '#ff1d1c',
+    'MARTH': '#2f3955',
+    'MEWTWO': '#734c60',
+    'NESS': '#f9ca58',
+    'PEACH': '#ff5488',
+    'PIKACHU': '#ffff00',
+    'ICE_CLIMBERS': '#8a63ff',
+    'JIGGLYPUFF': '#ffd6f0',
+    'SAMUS': '#da490c',
+    'YOSHI': '#008000',
+    'ZELDA': '#f9d9e6',
+    'SHEIK': '#4846db',
+    'FALCO': '#494fd6',
+    'YOUNG_LINK': '#009e01',
+    'DR_MARIO': '#d1cfc9',
+    'ROY': '#962000',
+    'PICHU': '#ffff1b',
+    'GANONDORF': '#91763e',
+}
+
+
 def get_key_from_value(value, dict):
     for key, val in dict.items():
         if val == value:

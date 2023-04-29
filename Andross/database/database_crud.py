@@ -45,6 +45,28 @@ def get_user(user_id: int, user_cc: str = None) -> Tuple[bool, User | None]:
         return False, None
 
 
+def update_user(user_id: int, user_cc: str, name: str) -> Tuple[bool, User | None]:
+    logger.info(f'update_user: {user_id}, {user_cc}, {name}')
+    try:
+        with create_session() as session:
+            results = session.query(User).filter(or_(User.id == user_id, User.cc == user_cc)).first()
+            results.id = user_id
+            results.cc = user_cc
+            results.name = name
+            session.commit()
+            if not results:
+                logger.info('Unable to update user')
+                return False, None
+            return True, results
+    except (IntegrityError, DataError) as e:
+        logger.error(f'Error running operation: {e}')
+        session.rollback()
+        return False, None
+    except OperationalError as e:
+        logger.error(f'Error connecting to database: {e}')
+        return False, None
+
+
 def get_all_elo(user_id: int) -> tuple[bool, None] | tuple[bool, list[Elo]]:
     logger.info(f'get_all_elo: {user_id}')
     try:
