@@ -91,11 +91,15 @@ def generate_basic_elo_graph(user: User) -> None | Tuple[str, datetime, datetime
             ax.text(x_axis[0], rank.lower_bound, rank.rank_name, fontsize='x-small')
 
     cwd = os.getcwd()
-    subdirectory = 'imgs'
+    sub_directory = 'imgs'
+    sub_path = os.path.join(cwd, sub_directory)
+
+    if not os.path.exists(sub_path):
+        os.makedirs(sub_path)
 
     # concatenate directory path with image file name
     filename = f'elo_{user.id}.png'
-    filepath = os.path.join(cwd, subdirectory, filename)
+    filepath = os.path.join(cwd, sub_directory, filename)
 
     # save image to specified directory
     pyplot.savefig(filepath)
