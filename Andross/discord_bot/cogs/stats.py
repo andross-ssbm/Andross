@@ -240,7 +240,6 @@ class StatsCog(commands.Cog, name='Stats'):
 
         await ctx.send('Your information has now been updated.')
 
-    # TODO Improve discord parameter descriptions
     @commands.command(name='reg', help='Registers a user for the bot')
     async def __reg_user(self, ctx: commands.Context, user_connect_code: str, name: str = namestr_paramater):
         logger.info(f'__reg_user: {ctx}, {user_connect_code}, {name}')
