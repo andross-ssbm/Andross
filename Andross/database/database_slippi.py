@@ -79,6 +79,7 @@ def update_leaderboard() -> bool:
                 logger.exception(f'Unknown exception: {e}')
                 session.rollback()
                 raise e
+        return True
 
 
 def update_slippi_id(session, user: User, slippi_user: SlippiUser) -> bool:
