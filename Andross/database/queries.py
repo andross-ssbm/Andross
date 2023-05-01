@@ -13,6 +13,27 @@ logger = logging.getLogger(f'andross.{__name__}')
 leaderboard_type = [str, str, float, int, int, int, int]  # name, cc, elo, wins, losses, drp, user.id
 
 
+def get_latest_elo_entry_time() -> [bool, datetime]:
+    logger.info(f'get_latest_elo_entry_time')
+
+    with create_session() as session:
+        try:
+            max_entry_time = session.query(func.max(CharactersEntry.entry_time)).scalar()
+            query = session.query(Elo)\
+                .filter(Elo.entry_time == max_entry_time)
+            results = query.first()
+            if not results:
+                return False, None
+            return True, results.entry_time
+        except (IntegrityError, DataError) as e:
+            logger.error(f'Error running operation: {e}')
+            session.rollback()
+            return 0
+        except OperationalError as e:
+            logger.error(f'Error connecting to database: {e}')
+            return 0
+
+
 def get_users_latest_characters(user: User) -> [bool, CharactersEntry | None]:
     logger.info(f'get_users_latest_characters: {user}')
 

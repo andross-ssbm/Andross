@@ -10,7 +10,7 @@ from Andross.database.models import create_session
 from Andross.database.database_crud import get_user, create_user, update_user
 from Andross.database.database_slippi import update_database
 from Andross.database.queries import get_users_latest_placement, get_leaderboard_standard, \
-    leaderboard_type
+    leaderboard_type, get_latest_elo_entry_time
 from Andross.slippi.slippi_ranks import get_rank
 from Andross.slippi.slippi_api import get_player_ranked_data, is_valid_connect_code
 
@@ -313,7 +313,7 @@ class StatsCog(commands.Cog, name='Stats'):
         if not results or not leaderboard:
             await ctx.send('Unable to get get leaderboard please try again')
 
-        latest_date = leaderboard[0].entry_time
+        results, latest_date = get_latest_elo_entry_time()
 
         if focus_me:
             for entry in leaderboard:
@@ -324,8 +324,8 @@ class StatsCog(commands.Cog, name='Stats'):
         leaderboard = format_leaderboard(leaderboard)
         logger.debug(f'leaderboard: {ctx.author}, {focus_me}')
 
-        if latest_date:
-            string_date = latest_date.entry_time.astimezone(
+        if results:
+            string_date = latest_date.astimezone(
                 tz=ZoneInfo('America/Detroit')).strftime('%Y-%m-%d %H:%M:%S')
         else:
             string_date = 'Failed to get date'
