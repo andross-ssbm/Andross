@@ -16,6 +16,7 @@ logger = logging.getLogger(f'andross.{__name__}')
 
 
 def get_all_users_ranked_list(session) -> bool | list[[User, SlippiUser]]:
+    logger.info(f'get_all_users_ranked_list')
     return_value = []
     try:
         users = session.query(User).all()
