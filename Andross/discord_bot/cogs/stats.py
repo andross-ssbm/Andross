@@ -1,5 +1,7 @@
 import logging
 import math
+import requests
+from datetime import datetime
 
 import discord
 from discord.ext import commands
@@ -16,6 +18,7 @@ from Andross.slippi.slippi_api import get_player_ranked_data, is_valid_connect_c
 
 from Andross.discord_bot.cogs.utils.colors import slippi_green
 from Andross.discord_bot.cogs.utils.views import UserStatsView
+from Andross.andross_api.andross_api import api_url, authorization_header
 
 logger = logging.getLogger(f'andross.{__name__}')
 
@@ -29,7 +32,7 @@ namestr_paramater = commands.parameter(default=lambda ctx: ctx.author.display_na
                                        description=namestr_description)
 
 
-def format_leaderboard(leaderboard: list[leaderboard_type]) -> list[str]:
+def format_leaderboard(leaderboard: dict) -> list[str]:
     def generate_whitespace(n):
         return " " * n
 
@@ -40,12 +43,13 @@ def format_leaderboard(leaderboard: list[leaderboard_type]) -> list[str]:
         counter += 1
         base_whitespace = 13
         whitespace_amount_front = 2 if counter <= 9 else 1
-        whitespace_amount = (base_whitespace - len(entry[0]))
-        leaderboard_text.append(f"{counter}."
-                                f"{generate_whitespace(whitespace_amount_front)}{entry[0]}"
+        whitespace_amount = (base_whitespace - len(entry['name']))
+        leaderboard_text.append(f"{entry['position']}."
+                                f"{generate_whitespace(whitespace_amount_front)}{entry['name']}"
                                 f"{generate_whitespace(whitespace_amount)}"
-                                f"| {format(entry[2], '.1f')} ({entry[3]}/{entry[4]}) "
-                                f"{get_rank(entry[2], entry[5])}")
+                                f"| {format(entry['latest_elo'], '.1f')} "
+                                f"({entry['latest_wins']}/{entry['latest_losses']}) "
+                                f"{get_rank(entry['latest_elo'], entry['latest_drp'])}")
     return leaderboard_text
 
 
@@ -98,7 +102,6 @@ class StatsCog(commands.Cog, name='Stats'):
 
         await ctx.send(f'An error occurred: {error}')
 
-    # TODO Add try except for database functions
     @commands.command(name='user', help='In-depth stats display')
     async def __user(self, ctx: commands.Context, user_info: discordMemberStr = memberstr_parameter):
         logger.info(f'__user: {ctx}, {user_info}')
@@ -115,51 +118,54 @@ class StatsCog(commands.Cog, name='Stats'):
         if isinstance(user_info, discord.Member):
             user_id = user_info.id
 
-        with create_session() as session:
-            # Attempt to get local user info
-            results, local_user = get_user(user_id, cc)
-            if not results and not is_cc:
-                await ctx.send('Unable to get your info from database, please provide a connect_code or register with '
-                               'the register command.')
-                await ctx.send_help('reg')
-                return
+        response = requests.get(f'{api_url}/get_user/', params={'id': user_id, 'cc': cc})
+        local_user = response.json()
+        if response.status_code == 404 and not is_cc:
+            await ctx.send('Unable to get your info from database, please provide a connect_code or register with '
+                           'the register command.')
+            await ctx.send_help('reg')
+            return
 
-            ranked_data = get_player_ranked_data(local_user.cc if local_user else cc)
-            if not ranked_data.ranked_profile.id:
-                await ctx.send('Was unable to get your stats from slippi.gg, please try again or check your info')
-                return
+        ranked_data = get_player_ranked_data(cc if is_cc else local_user['cc'])
+        if not ranked_data.ranked_profile.id:
+            await ctx.send('Unable to get your stats from slippi.gg')
+            return
 
-            if local_user:
-                user_placement = user_placement = get_users_latest_placement(local_user)
+        if local_user:
+            response = requests.get(f'{api_url}/get_lbe/', params={'id': user_id})
+            if response.status_code == 200:
+                user_placement = response.json()['position']
             else:
-                user_placement = ranked_data.ranked_profile.daily_regional_placement
+                user_placement = 0
+        else:
+            user_placement = ranked_data.ranked_profile.daily_regional_placement
 
-            wins = ranked_data.ranked_profile.wins
-            losses = ranked_data.ranked_profile.losses
-            if (not wins and losses) or not wins and not losses:
-                win_rate = 0
-            elif not losses:
-                win_rate = 100
-            else:
-                win_rate = (wins / (wins + losses)) * 100
+        wins = ranked_data.ranked_profile.wins
+        losses = ranked_data.ranked_profile.losses
+        if (not wins and losses) or not wins and not losses:
+            win_rate = 0
+        elif not losses:
+            win_rate = 100
+        else:
+            win_rate = (wins / (wins + losses)) * 100
 
-            user_embed = discord.Embed(title=f'{user_placement}. '
-                                             f'{local_user.name if local_user else ranked_data.display_name} '
-                                             f'[{ranked_data.connect_code}]',
-                                       url=f'{ranked_data.get_user_profile_page()}',
-                                       color=slippi_green)
-            if ranked_data.ranked_profile.characters:
-                user_embed.set_thumbnail(url=ranked_data.get_main_character().get_character_icon_url())
-            else:
-                user_embed.set_thumbnail(url='https://avatars.githubusercontent.com/u/45867030?s=200&v=4')
-            user_embed.add_field(name='Elo', value=f'{ranked_data.ranked_profile.rating_ordinal:.2f}')
-            user_embed.add_field(name='Rank', value=ranked_data.get_rank())
-            user_embed.add_field(name='\u200b', value='\u200b')
-            user_embed.add_field(name='Wins', value=wins)
-            user_embed.add_field(name='Loses', value=losses)
-            user_embed.add_field(name='Win-rate', value=f'{win_rate:.2f}%')
+        user_embed = discord.Embed(title=f'{user_placement}. '
+                                         f'{local_user["name"] if local_user else ranked_data.display_name} '
+                                         f'[{ranked_data.connect_code}]',
+                                   url=f'{ranked_data.get_user_profile_page()}',
+                                   color=slippi_green)
+        if ranked_data.ranked_profile.characters:
+            user_embed.set_thumbnail(url=ranked_data.get_main_character().get_character_icon_url())
+        else:
+            user_embed.set_thumbnail(url='https://avatars.githubusercontent.com/u/45867030?s=200&v=4')
+        user_embed.add_field(name='Elo', value=f'{ranked_data.ranked_profile.rating_ordinal:.2f}')
+        user_embed.add_field(name='Rank', value=ranked_data.get_rank())
+        user_embed.add_field(name='\u200b', value='\u200b')
+        user_embed.add_field(name='Wins', value=wins)
+        user_embed.add_field(name='Loses', value=losses)
+        user_embed.add_field(name='Win-rate', value=f'{win_rate:.2f}%')
 
-            await ctx.send(view=UserStatsView(ctx, user_embed, ranked_data), embed=user_embed)
+        await ctx.send(view=UserStatsView(ctx, user_embed, ranked_data), embed=user_embed)
 
     @commands.command(name='stats', help='Simple stats display')
     async def __stats(self, ctx: commands.Context, user_info: discordMemberStr = memberstr_parameter):
@@ -176,15 +182,15 @@ class StatsCog(commands.Cog, name='Stats'):
         if isinstance(user_info, discord.Member):
             user_id = user_info.id
 
-        # Attempt to get local user info
-        results, local_user = get_user(user_id, cc)
-        if not results and not is_cc:
+        response = requests.get(f'{api_url}/get_user/', params={'id': user_id, 'cc': cc})
+        local_user = None if is_cc else response.json()
+        if response.status_code == 404 and not is_cc:
             await ctx.send('Unable to get your info from database, please provide a connect_code or register with '
                            'the register command.')
             await ctx.send_help('reg')
             return
 
-        ranked_data = get_player_ranked_data(local_user.cc if results else cc)
+        ranked_data = get_player_ranked_data(cc if is_cc else local_user['cc'])
         if not ranked_data.ranked_profile.id:
             await ctx.send('Was unable to get your stats from slippi.gg, please try again or check your info')
             return
@@ -221,20 +227,25 @@ class StatsCog(commands.Cog, name='Stats'):
 
         user_connect_code = user_connect_code.lower()
 
-        results, id_check = get_user(ctx.author.id)
-        if not results:
+        response = requests.get(f'{api_url}/user_id/', params={'id': ctx.author.id})
+        if response.status_code == 404:
             await ctx.send(f'You\'re not registered. Please register with the $reg command instead.')
             await ctx.send_help('reg')
             return
 
-        results, cc_check = get_user(0, user_connect_code)
-        if results and ctx.author.id != cc_check.id:
-            await ctx.send(f'{user_connect_code} is already being used by {cc_check}. '
+        response = requests.get(f'{api_url}/user_cc/', params={'cc': user_connect_code})
+        if response == 200 and ctx.author.id != response.json()['id']:
+            await ctx.send(f'{user_connect_code} is already being used by {response.json()["name"]}. '
                            f'Please enter a different one.')
             return
 
-        results = update_user(ctx.author.id, user_connect_code, name)
-        if not results:
+        post_parameters = {
+            'id': ctx.author.id,
+            'cc': user_connect_code,
+            'name': name,
+            }
+        response = requests.post(f'{api_url}/update_user', params=post_parameters, headers=authorization_header)
+        if response.status_code != 201:
             await ctx.send('Unable to update user, please try again later.')
             return
 
@@ -260,33 +271,49 @@ class StatsCog(commands.Cog, name='Stats'):
 
         user_connect_code = user_connect_code.lower()
 
-        results, id_check = get_user(ctx.author.id)
-        if results:
-            await ctx.send(f'You\'ve already created an account your connect code is {id_check.cc}')
+        response = requests.get(f'{api_url}/user_id/', {'id': ctx.author.id})
+        id_check = response.json()
+        if response.status_code != 404:
+            await ctx.send(f'You\'ve already created an account your connect code is {id_check["cc"]}')
+            return
+        elif response.status_code != 200:
+            await ctx.send(f'Unknown error occurred, try again or ping soph')
             return
 
-        results, cc_check = get_user(0, user_connect_code)
-        if results:
-            await ctx.send(f'{user_connect_code} is already being used by {cc_check}. '
+        response = requests.get(f'{api_url}/user_cc/', {'cc': user_connect_code})
+        cc_check = response.json()
+        if response.status_code != 404:
+            await ctx.send(f'{user_connect_code} is already being used by {cc_check["name"]}. '
                            f'Please enter a different one.')
             return
+        elif response.status_code != 200:
+            await ctx.send(f'Unknown error occurred, try again or ping soph')
+            return
 
-        results = create_user(ctx.author.id, user_connect_code, name)
-        if not results:
-            await ctx.send('Unable to create user, please try again later.')
+        post_parameters = {
+            'id': ctx.author.id,
+            'cc': user_connect_code,
+            'name': name,
+        }
+        response = requests.post(f'{api_url}/user', params=post_parameters, headers=authorization_header)
+        if response.status_code != 201:
+            await ctx.send(f'Unable to create user, please try again later.')
             return
 
         await ctx.send('Thank you for registering, we will now get your stats for you')
 
-        # Attempt to create database entries for the user
-        if update_database(ctx.author.id):
+        # Attempt to create stats entry for user
+        response = requests.post(f'{api_url}/update', params={'id': ctx.author.id}, headers=authorization_header)
+        if response.status_code != 201:
             await ctx.send('Updated your stats.')
-            results, user_stats = get_user(ctx.author.id)
-            if results:
+
+            response = requests.get(f'{api_url}/user_id', params={'id': ctx.author.id})
+            user = response.json()
+            if response.status_code == 200:
                 await ctx.send(f'```'
-                               f'{user_stats.name} ({user_stats.cc})\n'
-                               f'{user_stats.latest_elo:.2f} | ({user_stats.latest_wins}/{user_stats.latest_losses}) |'
-                               f' {get_rank(user_stats.latest_elo, user_stats.latest_drp)}'
+                               f'{user["name"]} ({user["cc"].upper()})\n'
+                               f'{user["latest_elo"]:.2f} | ({user["latest_wins"]}/{user["latest_losses"]}) |'
+                               f'{get_rank(user["latest_elo"], user["latest_drp"])}'
                                f'```')
                 return
 
@@ -301,6 +328,7 @@ class StatsCog(commands.Cog, name='Stats'):
 
         focus_user = 0
         user_index = 0
+        latest_date = None
 
         if focus_me:
             if isinstance(focus_me, discord.Member):
@@ -308,22 +336,22 @@ class StatsCog(commands.Cog, name='Stats'):
             else:
                 focus_user = ctx.author.id
 
-        results, leaderboard = get_leaderboard_standard()
-        if not results or not leaderboard:
-            await ctx.send('Unable to get get leaderboard please try again')
+        response = requests.get(f'{api_url}/get_leaderboard')
+        if response.status_code != 200:
+            await ctx.send('Unable to get leaderboard please try again')
+            return
+        leaderboard = response.json()
 
-        results, latest_date = get_latest_elo_entry_time()
-
-        if focus_me:
-            for entry in leaderboard:
-                if entry[6] == focus_user:
-                    user_index = leaderboard.index(entry)
-                    break
+        response = requests.get(f'{api_url}/latest_elo/')
+        if response.status_code != 200:
+            logger.warning('Unable to get latest date')
+        else:
+            latest_date = datetime.strptime(response.json()['entry_time'], '%Y-%m-%d %H:%M:%S.%f')
 
         leaderboard = format_leaderboard(leaderboard)
         logger.debug(f'leaderboard: {ctx.author}, {focus_me}')
 
-        if results:
+        if latest_date:
             string_date = latest_date.astimezone(
                 tz=ZoneInfo('America/Detroit')).strftime('%Y-%m-%d %H:%M:%S')
         else:
