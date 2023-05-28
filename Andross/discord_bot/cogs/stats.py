@@ -5,14 +5,8 @@ from datetime import datetime
 
 import discord
 from discord.ext import commands
-from sqlalchemy import or_
 from zoneinfo import ZoneInfo
 
-from Andross.database.models import create_session
-from Andross.database.database_crud import get_user, create_user, update_user
-from Andross.database.database_slippi import update_database
-from Andross.database.queries import get_users_latest_placement, get_leaderboard_standard, \
-    leaderboard_type, get_latest_elo_entry_time
 from Andross.slippi.slippi_ranks import get_rank
 from Andross.slippi.slippi_api import get_player_ranked_data, is_valid_connect_code
 
@@ -272,21 +266,21 @@ class StatsCog(commands.Cog, name='Stats'):
         user_connect_code = user_connect_code.lower()
 
         response = requests.get(f'{api_url}/user_id/', {'id': ctx.author.id})
-        id_check = response.json()
         if response.status_code != 404:
+            id_check = response.json()
             await ctx.send(f'You\'ve already created an account your connect code is {id_check["cc"]}')
             return
-        elif response.status_code != 200:
+        elif response.status_code != 200 and response.status_code != 404:
             await ctx.send(f'Unknown error occurred, try again or ping soph')
             return
 
         response = requests.get(f'{api_url}/user_cc/', {'cc': user_connect_code})
-        cc_check = response.json()
         if response.status_code != 404:
+            cc_check = response.json()
             await ctx.send(f'{user_connect_code} is already being used by {cc_check["name"]}. '
                            f'Please enter a different one.')
             return
-        elif response.status_code != 200:
+        elif response.status_code != 200 and response.status_code != 404:
             await ctx.send(f'Unknown error occurred, try again or ping soph')
             return
 
@@ -304,7 +298,7 @@ class StatsCog(commands.Cog, name='Stats'):
 
         # Attempt to create stats entry for user
         response = requests.post(f'{api_url}/update', params={'id': ctx.author.id}, headers=authorization_header)
-        if response.status_code != 201:
+        if response.status_code == 201:
             await ctx.send('Updated your stats.')
 
             response = requests.get(f'{api_url}/user_id', params={'id': ctx.author.id})
@@ -312,7 +306,7 @@ class StatsCog(commands.Cog, name='Stats'):
             if response.status_code == 200:
                 await ctx.send(f'```'
                                f'{user["name"]} ({user["cc"].upper()})\n'
-                               f'{user["latest_elo"]:.2f} | ({user["latest_wins"]}/{user["latest_losses"]}) |'
+                               f'{user["latest_elo"]:.2f} | ({user["latest_wins"]}/{user["latest_losses"]}) | '
                                f'{get_rank(user["latest_elo"], user["latest_drp"])}'
                                f'```')
                 return
