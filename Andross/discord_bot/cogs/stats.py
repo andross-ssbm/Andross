@@ -6,9 +6,8 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 from zoneinfo import ZoneInfo
-
-from Andross.slippi.slippi_ranks import get_rank
-from Andross.slippi.slippi_api import get_player_ranked_data, is_valid_connect_code
+from slippi.main import slippi_api
+from slippi.slippi_ranks import get_rank
 
 from Andross.discord_bot.cogs.utils.colors import slippi_green
 from Andross.discord_bot.cogs.utils.views import UserStatsView
@@ -120,7 +119,7 @@ class StatsCog(commands.Cog, name='Stats'):
             await ctx.send_help('reg')
             return
 
-        ranked_data = get_player_ranked_data(cc if is_cc else local_user['cc'])
+        ranked_data = slippi_api.get_player_ranked_data(cc if is_cc else local_user['cc'])
         if not ranked_data.ranked_profile.id:
             await ctx.send('Unable to get your stats from slippi.gg')
             return
@@ -184,7 +183,7 @@ class StatsCog(commands.Cog, name='Stats'):
             await ctx.send_help('reg')
             return
 
-        ranked_data = get_player_ranked_data(cc if is_cc else local_user['cc'])
+        ranked_data = slippi_api.get_player_ranked_data(cc if is_cc else local_user['cc'])
         if not ranked_data.ranked_profile.id:
             await ctx.send('Was unable to get your stats from slippi.gg, please try again or check your info')
             return
@@ -209,7 +208,7 @@ class StatsCog(commands.Cog, name='Stats'):
     async def __edit_user(self, ctx: commands.Context, user_connect_code: str, name: str = namestr_paramater):
         logger.info(f'__edit_user: {ctx}, {user_connect_code}, {name}')
 
-        if not is_valid_connect_code(user_connect_code.lower()):
+        if not slippi_api.is_valid_connect_code(user_connect_code.lower()):
             await ctx.send(f'You\'ve entered a invalid connect code, please enter a valid connect code')
             await ctx.send_help('reg')
             return
@@ -249,7 +248,7 @@ class StatsCog(commands.Cog, name='Stats'):
     async def __reg_user(self, ctx: commands.Context, user_connect_code: str, name: str = namestr_paramater):
         logger.info(f'__reg_user: {ctx}, {user_connect_code}, {name}')
 
-        if not is_valid_connect_code(user_connect_code.lower()):
+        if not slippi_api.is_valid_connect_code(user_connect_code.lower()):
             await ctx.send(f'You\'ve entered a invalid connect code, please enter a valid connect code')
             await ctx.send_help('reg')
             return

@@ -7,8 +7,8 @@ from sqlalchemy import create_engine, Integer, BigInteger, \
 from sqlalchemy.orm import relationship, DeclarativeBase, sessionmaker, Mapped, mapped_column, Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
-from Andross.slippi.slippi_characters import SlippiCharacterId
-from Andross.slippi.slippi_ranks import get_rank
+from slippi.slippi_characters import SlippiCharacterId
+from slippi.slippi_ranks import get_rank
 
 # Database variables
 DB_HOST = os.getenv('DB_HOST')

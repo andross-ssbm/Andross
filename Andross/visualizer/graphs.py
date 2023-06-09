@@ -6,8 +6,8 @@ from datetime import timedelta, datetime
 from Andross.database.models import User, Elo
 from Andross.database.database_crud import get_all_elo, get_user
 from Andross.database.queries import get_users_latest_characters
-from Andross.slippi.slippi_ranks import rank_list
-from Andross.slippi.slippi_characters import SlippiCharacterColors
+from slippi.slippi_ranks import rank_list
+from slippi.slippi_characters import SlippiCharacterColors
 
 
 discord_colors = {
