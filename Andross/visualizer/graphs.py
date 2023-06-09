@@ -10,9 +10,6 @@ from Andross.slippi.slippi_ranks import rank_list
 from Andross.slippi.slippi_characters import SlippiCharacterColors
 
 
-import unicodedata
-import re
-
 discord_colors = {
     'green': '#57F287',
     'slippi_green': '#21ba45',
@@ -85,7 +82,7 @@ def generate_character_usage_pie(user: User) -> None | str:
         os.makedirs(sub_path)
 
     # concatenate directory path with image file name
-    filename = f'elo_{user.id}.png'
+    filename = f'characters_{user.id}.png'
     filepath = os.path.join(cwd, sub_directory, filename)
 
     # save image to specified directory
