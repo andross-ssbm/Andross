@@ -1,12 +1,16 @@
+import datetime
 import logging
 import os
+from datetime import datetime
 
 import discord
+import requests
 from discord.ext import commands
 
 from Andross.database.database_crud import get_user
 from Andross.discord_bot.cogs.utils.colors import slippi_green
 from Andross.visualizer.graphs import generate_basic_elo_graph, generate_character_usage_pie
+from Andross.andross_api.andross_api import api_url, api_key
 
 logger = logging.getLogger(f'andross.{__name__}')
 
@@ -31,62 +35,93 @@ class VisualizerCog(commands.Cog, name='Visualizer'):
         logger.info(f'__elo: {ctx}')
 
         # Attempt to get local user info
-        results, local_user = get_user(ctx.author.id)
-        if not results:
+        response = requests.get(f'{api_url}/rest/user/{ctx.author.id}')
+        if response.status_code == 404 or response.status_code != 200:
             await ctx.send('You\'re not registered, please register with the register command.')
             await ctx.send_help('reg')
             return
+        local_user = response.json()
 
-        graph_info = generate_basic_elo_graph(local_user)
-        if not graph_info:
+        response = requests.get(f'{api_url}/get_elo_graph', params={'id': ctx.author.id, 'as_image': 'true'})
+        if response.status_code != 200:
             await ctx.send('Unable to generate a graph, please try again later.')
             return
 
-        file = discord.File(graph_info[0], filename='elo_graph.png')
+        cwd = os.getcwd()
+        sub_directory = 'imgs'
+        sub_path = os.path.join(cwd, sub_directory)
+
+        if not os.path.exists(sub_path):
+            os.makedirs(sub_path)
+
+        # concatenate directory path with image file name
+        filename = f'elo_{local_user["id"]}.png'
+        filepath = os.path.join(cwd, sub_directory, filename)
+
+        with open(filepath, 'wb') as file:
+            file.write(response.content)
+
+        file = discord.File(filepath, filename='elo_graph.png')
 
         # create an embed object and set its properties
-        embed = discord.Embed(title=f'{local_user.name}\'s elo graph',
+        embed = discord.Embed(title=f'{local_user["name"]}\'s elo graph',
                               description='',
                               color=slippi_green)
-        embed.set_footer(text=f'{graph_info[1].strftime("%m/%d/%Y")} -> {graph_info[2].strftime("%m/%d/%Y")}',
+        embed.set_footer(text=f'{datetime(2022, 12, 1, 0, 0, 0) .strftime("%m/%d/%Y")} -> '
+                              f'{datetime.utcnow().strftime("%m/%d/%Y")}',
                          icon_url='https://avatars.githubusercontent.com/u/45867030?s=200&v=4')
         embed.set_image(url='attachment://elo_graph.png')
         # send the embed with the image to a channel
         await ctx.send(file=file, embed=embed)
 
-        if os.path.exists(graph_info[0]):
-            os.remove(graph_info[0])
+        if os.path.exists(filepath):
+            os.remove(filepath)
 
     @commands.command(name='characters', help='Generate a pie graph of your character usage')
     async def __characters(self, ctx: commands.Context):
         logger.info(f'__characters: {ctx}')
 
         # Attempt to get local user info
-        results, local_user = get_user(ctx.author.id)
-        if not results:
+        response = requests.get(f'{api_url}/rest/user/{ctx.author.id}')
+        if response.status_code == 404 or response.status_code != 200:
             await ctx.send('You\'re not registered, please register with the register command.')
             await ctx.send_help('reg')
             return
+        local_user = response.json()
 
-        graph_info = generate_character_usage_pie(local_user)
-        if not graph_info:
+        response = requests.get(f'{api_url}/get_character_graph', params={'id': ctx.author.id, 'as_image': 'true'})
+        if response.status_code != 200:
             await ctx.send('Unable to generate a graph, please try again later.')
             return
 
-        file = discord.File(graph_info, filename='elo_graph.png')
+        cwd = os.getcwd()
+        sub_directory = 'imgs'
+        sub_path = os.path.join(cwd, sub_directory)
+
+        if not os.path.exists(sub_path):
+            os.makedirs(sub_path)
+
+        # concatenate directory path with image file name
+        filename = f'characters_{local_user["id"]}.png'
+        filepath = os.path.join(cwd, sub_directory, filename)
+
+        with open(filepath, 'wb') as file:
+            file.write(response.content)
+
+        file = discord.File(filepath, filename='character_graph.png')
 
         # create an embed object and set its properties
-        embed = discord.Embed(title=f'{local_user.name}\'s character usage',
+        embed = discord.Embed(title=f'{local_user["name"]}\'s character usage',
                               description='',
                               color=slippi_green)
         embed.set_footer(text=f'Characters',
                          icon_url='https://avatars.githubusercontent.com/u/45867030?s=200&v=4')
-        embed.set_image(url='attachment://elo_graph.png')
+        embed.set_image(url='attachment://character_graph.png')
         # send the embed with the image to a channel
         await ctx.send(file=file, embed=embed)
 
-        if os.path.exists(graph_info):
-            os.remove(graph_info)
+        if os.path.exists(filepath):
+            os.remove(filepath)
 
 
 async def setup(bot: commands.Bot):
