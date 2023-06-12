@@ -338,7 +338,7 @@ class StatsCog(commands.Cog, name='Stats'):
             return
         leaderboard = response.json()
 
-        response = requests.get(f'{api_url}/elo/user/0/latest')
+        response = requests.get(f'{api_url}/rest/elo/user/0/latest')
         if response.status_code != 200:
             logger.warning('Unable to get latest date')
         else:
