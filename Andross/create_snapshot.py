@@ -38,9 +38,9 @@ logger.debug(f'--database {args.database}')
 if args.leaderboard:
     logger.info('Updating leaderboard')
     response = requests.post(f'{api_url}/rest/update_leaderboard/', headers=authorization_header)
-    logger.info(f'Leaderboard {"Updated." if response.status_code == 201 else "not updated."}')
+    logger.info(f'Leaderboard {"Updated." if response.status_code == 201 else "not updated."} {response.status_code}')
 
 if args.database:
     logger.info('Updating database')
     response = requests.post(f'{api_url}/rest/update/', headers=authorization_header)
-    logger.info(f'Database {"Updated." if response.status_code == 201 else "not updated."}')
+    logger.info(f'Database {"Updated." if response.status_code == 201 else "not updated."}  {response.status_code}')
