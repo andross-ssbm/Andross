@@ -40,10 +40,14 @@ class VisualizerCog(commands.Cog, name='Visualizer'):
             return
         local_user = response.json()
 
-        response = requests.get(f'{api_url}/get_elo_graph', params={'id': ctx.author.id, 'as_image': 'true'})
+        response = requests.get(f'{api_url}/get_elo_graph', params={'id': ctx.author.id})
         if response.status_code != 200:
             await ctx.send('Unable to generate a graph, please try again later.')
             return
+
+        graph_info = response.json()
+
+        response = requests.get(f'{api_url}/static/images/graphs/' + graph_info['filename'])
 
         cwd = os.getcwd()
         sub_directory = 'imgs'
@@ -65,8 +69,8 @@ class VisualizerCog(commands.Cog, name='Visualizer'):
         embed = discord.Embed(title=f'{local_user["name"]}\'s elo graph',
                               description='',
                               color=slippi_green)
-        embed.set_footer(text=f'{datetime(2022, 12, 1, 0, 0, 0) .strftime("%m/%d/%Y")} -> '
-                              f'{datetime.utcnow().strftime("%m/%d/%Y")}',
+        embed.set_footer(text=f'{graph_info["start_date"]} -> '
+                              f'{graph_info["end_date"]}',
                          icon_url='https://avatars.githubusercontent.com/u/45867030?s=200&v=4')
         embed.set_image(url='attachment://elo_graph.png')
         # send the embed with the image to a channel
