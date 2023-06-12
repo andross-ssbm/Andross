@@ -42,7 +42,7 @@ def format_leaderboard(leaderboard: dict) -> list[str]:
                                 f"{generate_whitespace(whitespace_amount)}"
                                 f"| {format(entry['latest_elo'], '.1f')} "
                                 f"({entry['latest_wins']}/{entry['latest_losses']}) "
-                                f"{get_rank(entry['latest_elo'], entry['latest_drp'])}")
+                                f"{get_rank(entry['latest_elo'], entry['latest_drp'], entry['latest_dgp'])}")
     return leaderboard_text
 
 
@@ -125,7 +125,7 @@ class StatsCog(commands.Cog, name='Stats'):
             return
 
         if local_user:
-            response = requests.get(f'{api_url}/rest/get_lbe/', params={'id': user_id})
+            response = requests.get(f'{api_url}/rest/get_lbe/', params={'id': local_user['id']})
             if response.status_code == 200:
                 user_placement = response.json()['position']
             else:
@@ -157,6 +157,8 @@ class StatsCog(commands.Cog, name='Stats'):
         user_embed.add_field(name='Wins', value=wins)
         user_embed.add_field(name='Loses', value=losses)
         user_embed.add_field(name='Win-rate', value=f'{win_rate:.2f}%')
+        user_embed.set_footer(icon_url=f'http://nerv.group/static/images/ranks/'
+                                       f'{ranked_data.get_rank().replace(" ", "_")}.svg')
 
         await ctx.send(view=UserStatsView(ctx, user_embed, ranked_data), embed=user_embed)
 
@@ -307,7 +309,7 @@ class StatsCog(commands.Cog, name='Stats'):
                 await ctx.send(f'```'
                                f'{user["name"]} ({user["cc"].upper()})\n'
                                f'{user["latest_elo"]:.2f} | ({user["latest_wins"]}/{user["latest_losses"]}) | '
-                               f'{get_rank(user["latest_elo"], user["latest_drp"])}'
+                               f'{get_rank(user["latest_elo"], user["latest_drp"], user["latest_dgp"])}'
                                f'```')
                 return
 
