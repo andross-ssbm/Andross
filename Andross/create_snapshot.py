@@ -6,7 +6,6 @@ import requests
 from custom_logging import CustomFormatter, format_string
 from Andross.andross_api.andross_api import api_url, authorization_header
 
-
 logger = logging.getLogger('andross')
 logger.setLevel(logging.DEBUG)
 
