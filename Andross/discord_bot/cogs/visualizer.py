@@ -7,10 +7,8 @@ import discord
 import requests
 from discord.ext import commands
 
-from Andross.database.database_crud import get_user
 from Andross.discord_bot.cogs.utils.colors import slippi_green
-from Andross.visualizer.graphs import generate_basic_elo_graph, generate_character_usage_pie
-from Andross.andross_api.andross_api import api_url, api_key
+from Andross.andross_api.andross_api import api_url
 
 logger = logging.getLogger(f'andross.{__name__}')
 
