@@ -5,9 +5,10 @@ import logging
 from sqlalchemy import create_engine, Integer, BigInteger, \
     String, DateTime, Index, ForeignKey, func, and_, select, FLOAT, Double
 from sqlalchemy.orm import relationship, DeclarativeBase, sessionmaker, Mapped, mapped_column, Session
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
-from Andross.slippi.slippi_characters import SlippiCharacterId
-from Andross.slippi.slippi_ranks import get_rank
+from slippi.slippi_characters import SlippiCharacterId
+from slippi.slippi_ranks import get_rank
 
 # Database variables
 DB_HOST = os.getenv('DB_HOST')
@@ -17,7 +18,8 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 # create the database engine
-engine = create_engine(f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}', echo=False)
+engine = create_engine(f'postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@'
+                       f'{DB_HOST}:{DB_PORT}/{DB_NAME}', echo=False)
 
 
 def create_session() -> Session:

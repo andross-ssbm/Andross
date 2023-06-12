@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ui import View
 
-from Andross.slippi.slippi_user import SlippiUser
+from slippi.slippi_user import SlippiUser
 from Andross.discord_bot.cogs.utils.components import CharacterDropdown
 
 

@@ -6,12 +6,9 @@ from datetime import timedelta, datetime
 from Andross.database.models import User, Elo
 from Andross.database.database_crud import get_all_elo, get_user
 from Andross.database.queries import get_users_latest_characters
-from Andross.slippi.slippi_ranks import rank_list
-from Andross.slippi.slippi_characters import SlippiCharacterColors
+from slippi.slippi_ranks import rank_list
+from slippi.slippi_characters import SlippiCharacterColors
 
-
-import unicodedata
-import re
 
 discord_colors = {
     'green': '#57F287',
@@ -85,7 +82,7 @@ def generate_character_usage_pie(user: User) -> None | str:
         os.makedirs(sub_path)
 
     # concatenate directory path with image file name
-    filename = f'elo_{user.id}.png'
+    filename = f'characters_{user.id}.png'
     filepath = os.path.join(cwd, sub_directory, filename)
 
     # save image to specified directory

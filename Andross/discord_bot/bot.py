@@ -1,5 +1,6 @@
 import os
 from random import choice
+import requests
 
 import logging
 

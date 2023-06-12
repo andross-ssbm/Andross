@@ -2,7 +2,6 @@ import logging
 import os
 import sys
 
-from database.models import initialize
 from discord_bot.bot import bot
 from custom_logging import CustomFormatter, format_string
 
@@ -26,8 +25,6 @@ logger.addHandler(file_handler)
 
 def main():
     logger.info('Andross started')
-
-    initialize()
 
     logger.info('Database initialized')
 

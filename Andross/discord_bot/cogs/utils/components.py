@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
 
-from Andross.slippi.slippi_user import Characters
+from slippi.slippi_user import Characters
 from Andross.discord_bot.cogs.utils.colors import slippi_green
-from Andross.slippi.slippi_characters import SlippiCharacterColors
+from slippi.slippi_characters import SlippiCharacterColors
 
 
 class CharacterDropdown(discord.ui.Select):
