@@ -111,7 +111,7 @@ class StatsCog(commands.Cog, name='Stats'):
         if isinstance(user_info, discord.Member):
             user_id = user_info.id
 
-        response = requests.get(f'{api_url}/get_user/', params={'id': user_id, 'cc': cc})
+        response = requests.get(f'{api_url}/rest/user/{cc.replace("#", "-") if is_cc else user_id}')
         local_user = response.json()
         if response.status_code == 404 and not is_cc:
             await ctx.send('Unable to get your info from database, please provide a connect_code or register with '
@@ -125,7 +125,7 @@ class StatsCog(commands.Cog, name='Stats'):
             return
 
         if local_user:
-            response = requests.get(f'{api_url}/get_lbe/', params={'id': user_id})
+            response = requests.get(f'{api_url}/rest/get_lbe/', params={'id': user_id})
             if response.status_code == 200:
                 user_placement = response.json()['position']
             else:
@@ -175,7 +175,7 @@ class StatsCog(commands.Cog, name='Stats'):
         if isinstance(user_info, discord.Member):
             user_id = user_info.id
 
-        response = requests.get(f'{api_url}/get_user/', params={'id': user_id, 'cc': cc})
+        response = requests.get(f'{api_url}/rest/user/{cc.replace("#", "-") if is_cc else user_id}',)
         local_user = None if is_cc else response.json()
         if response.status_code == 404 and not is_cc:
             await ctx.send('Unable to get your info from database, please provide a connect_code or register with '
@@ -220,24 +220,26 @@ class StatsCog(commands.Cog, name='Stats'):
 
         user_connect_code = user_connect_code.lower()
 
-        response = requests.get(f'{api_url}/user_id/', params={'id': ctx.author.id})
+        response = requests.get(f'{api_url}/rest/user/{ctx.author.id}')
         if response.status_code == 404:
             await ctx.send(f'You\'re not registered. Please register with the $reg command instead.')
             await ctx.send_help('reg')
             return
 
-        response = requests.get(f'{api_url}/user_cc/', params={'cc': user_connect_code})
+        response = requests.get(f'{api_url}/rest/user/{user_connect_code.replace("#", "-")}')
         if response == 200 and ctx.author.id != response.json()['id']:
             await ctx.send(f'{user_connect_code} is already being used by {response.json()["name"]}. '
                            f'Please enter a different one.')
             return
 
         post_parameters = {
-            'id': ctx.author.id,
             'cc': user_connect_code,
             'name': name,
             }
-        response = requests.post(f'{api_url}/update_user', params=post_parameters, headers=authorization_header)
+        response = requests.post(f'{api_url}/rest/user/{ctx.author.id}',
+                                 params=post_parameters,
+                                 headers=authorization_header
+                                 )
         if response.status_code != 201:
             await ctx.send('Unable to update user, please try again later.')
             return
@@ -264,7 +266,7 @@ class StatsCog(commands.Cog, name='Stats'):
 
         user_connect_code = user_connect_code.lower()
 
-        response = requests.get(f'{api_url}/user_id/', {'id': ctx.author.id})
+        response = requests.get(f'{api_url}/rest/user/{ctx.author.id}')
         if response.status_code != 404:
             id_check = response.json()
             await ctx.send(f'You\'ve already created an account your connect code is {id_check["cc"]}')
@@ -273,7 +275,7 @@ class StatsCog(commands.Cog, name='Stats'):
             await ctx.send(f'Unknown error occurred, try again or ping soph')
             return
 
-        response = requests.get(f'{api_url}/user_cc/', {'cc': user_connect_code})
+        response = requests.get(f'{api_url}/rest/user/{user_connect_code.replace("#", "-")}')
         if response.status_code != 404:
             cc_check = response.json()
             await ctx.send(f'{user_connect_code} is already being used by {cc_check["name"]}. '
@@ -284,11 +286,10 @@ class StatsCog(commands.Cog, name='Stats'):
             return
 
         post_parameters = {
-            'id': ctx.author.id,
             'cc': user_connect_code,
             'name': name,
         }
-        response = requests.post(f'{api_url}/user', params=post_parameters, headers=authorization_header)
+        response = requests.post(f'{api_url}/rest/user/{ctx.author.id}', params=post_parameters, headers=authorization_header)
         if response.status_code != 201:
             await ctx.send(f'Unable to create user, please try again later.')
             return
@@ -296,11 +297,11 @@ class StatsCog(commands.Cog, name='Stats'):
         await ctx.send('Thank you for registering, we will now get your stats for you')
 
         # Attempt to create stats entry for user
-        response = requests.post(f'{api_url}/update', params={'id': ctx.author.id}, headers=authorization_header)
+        response = requests.post(f'{api_url}/rest/update/', params={'id': ctx.author.id}, headers=authorization_header)
         if response.status_code == 201:
             await ctx.send('Updated your stats.')
 
-            response = requests.get(f'{api_url}/user_id', params={'id': ctx.author.id})
+            response = requests.get(f'{api_url}/rest/user/{ctx.author.id}')
             user = response.json()
             if response.status_code == 200:
                 await ctx.send(f'```'
@@ -329,13 +330,13 @@ class StatsCog(commands.Cog, name='Stats'):
             else:
                 focus_user = ctx.author.id
 
-        response = requests.get(f'{api_url}/get_leaderboard')
+        response = requests.get(f'{api_url}/rest/get_leaderboard/')
         if response.status_code != 200:
             await ctx.send('Unable to get leaderboard please try again')
             return
         leaderboard = response.json()
 
-        response = requests.get(f'{api_url}/latest_elo/')
+        response = requests.get(f'{api_url}/elo/user/0/latest')
         if response.status_code != 200:
             logger.warning('Unable to get latest date')
         else:

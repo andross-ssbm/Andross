@@ -1,12 +1,10 @@
 import sys
 import logging
 import argparse
-
-from sqlalchemy.exc import IntegrityError, DataError, OperationalError
+import requests
 
 from custom_logging import CustomFormatter, format_string
-from Andross.database.models import create_session
-from Andross.database.database_slippi import update_leaderboard, update_database
+from Andross.andross_api.andross_api import api_url, authorization_header
 
 
 logger = logging.getLogger('andross')
@@ -37,26 +35,12 @@ logger.debug(f'--verbose: {args.verbose}')
 logger.debug(f'--leaderboard: {args.leaderboard}')
 logger.debug(f'--database {args.database}')
 
-try:
-    with create_session() as session:
-        logger.info('Database session established')
-        if args.leaderboard:
-            logger.info('Updating leaderboard')
-            status = update_leaderboard()
-            logger.info(f'Leaderboard {"Updated." if status else "not updated."}')
+if args.leaderboard:
+    logger.info('Updating leaderboard')
+    response = requests.post(f'{api_url}/rest/update_leaderboard/', headers=authorization_header)
+    logger.info(f'Leaderboard {"Updated." if response.status_code == 201 else "not updated."}')
 
-        if args.database:
-            logger.info('Updating database')
-            status = update_database()
-            logger.info(f'Database {"Updated." if status else "not updated."}')
-
-except (IntegrityError, DataError) as e:
-    logger.error(f'Error running operation: {e}')
-    session.rollback()
-except OperationalError as e:
-    logger.error(f'Error connecting to database: {e}')
-except Exception as e:
-    logger.exception(f'Unknown exception: {e}')
-    raise
-
-
+if args.database:
+    logger.info('Updating database')
+    response = requests.post(f'{api_url}/rest/update/', headers=authorization_header)
+    logger.info(f'Database {"Updated." if response.status_code == 201 else "not updated."}')

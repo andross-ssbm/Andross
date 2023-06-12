@@ -35,7 +35,7 @@ class VisualizerCog(commands.Cog, name='Visualizer'):
         logger.info(f'__elo: {ctx}')
 
         # Attempt to get local user info
-        response = requests.get(f'{api_url}/user_id/', params={'id': ctx.author.id})
+        response = requests.get(f'{api_url}/rest/user/{ctx.author.id}')
         if response.status_code == 404 or response.status_code != 200:
             await ctx.send('You\'re not registered, please register with the register command.')
             await ctx.send_help('reg')
@@ -82,7 +82,7 @@ class VisualizerCog(commands.Cog, name='Visualizer'):
         logger.info(f'__characters: {ctx}')
 
         # Attempt to get local user info
-        response = requests.get(f'{api_url}/user_id/', params={'id': ctx.author.id})
+        response = requests.get(f'{api_url}/rest/user/{ctx.author.id}')
         if response.status_code == 404 or response.status_code != 200:
             await ctx.send('You\'re not registered, please register with the register command.')
             await ctx.send_help('reg')
