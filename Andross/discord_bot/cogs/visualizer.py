@@ -87,10 +87,13 @@ class VisualizerCog(commands.Cog, name='Visualizer'):
             return
         local_user = response.json()
 
-        response = requests.get(f'{api_url}/get_character_graph', params={'id': ctx.author.id, 'as_image': 'true'})
+        response = requests.get(f'{api_url}/get_character_graph', params={'id': ctx.author.id})
         if response.status_code != 200:
             await ctx.send('Unable to generate a graph, please try again later.')
             return
+
+        # Download the image
+        response = requests.get(f'{api_url}/static/images/graphs/' + response.text)
 
         cwd = os.getcwd()
         sub_directory = 'imgs'
