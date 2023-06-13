@@ -309,7 +309,7 @@ class StatsCog(commands.Cog, name='Stats'):
                 await ctx.send(f'```'
                                f'{user["name"]} ({user["cc"].upper()})\n'
                                f'{user["latest_elo"]:.2f} | ({user["latest_wins"]}/{user["latest_losses"]}) | '
-                               f'{get_rank(user["latest_elo"], user["latest_drp"], user["latest_dgp"])}'
+                               f'{get_rank(user["latest_elo"], user["latest_dgp"])}'
                                f'```')
                 return
 
