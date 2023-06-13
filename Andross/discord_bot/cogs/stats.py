@@ -299,7 +299,7 @@ class StatsCog(commands.Cog, name='Stats'):
         await ctx.send('Thank you for registering, we will now get your stats for you')
 
         # Attempt to create stats entry for user
-        response = requests.post(f'{api_url}/rest/update/', params={'id': ctx.author.id}, headers=authorization_header)
+        response = requests.post(f'{api_url}/rest/update/', params={'user_id': ctx.author.id}, headers=authorization_header)
         if response.status_code == 201:
             await ctx.send('Updated your stats.')
 
