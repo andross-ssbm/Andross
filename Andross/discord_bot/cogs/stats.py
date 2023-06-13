@@ -157,8 +157,6 @@ class StatsCog(commands.Cog, name='Stats'):
         user_embed.add_field(name='Wins', value=wins)
         user_embed.add_field(name='Loses', value=losses)
         user_embed.add_field(name='Win-rate', value=f'{win_rate:.2f}%')
-        user_embed.set_footer(icon_url=f'http://{api_url}/static/images/ranks/'
-                                       f'{ranked_data.get_rank().replace(" ", "_")}.svg')
 
         await ctx.send(view=UserStatsView(ctx, user_embed, ranked_data), embed=user_embed)
 
