@@ -42,7 +42,7 @@ def format_leaderboard(leaderboard: dict) -> list[str]:
                                 f"{generate_whitespace(whitespace_amount)}"
                                 f"| {format(entry['latest_elo'], '.1f')} "
                                 f"({entry['latest_wins']}/{entry['latest_losses']}) "
-                                f"{get_rank(entry['latest_elo'], entry['latest_drp'], entry['latest_dgp'])}")
+                                f"{get_rank(entry['latest_elo'], entry['latest_dgp'])}")
     return leaderboard_text
 
 
