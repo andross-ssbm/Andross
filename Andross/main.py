@@ -26,8 +26,6 @@ logger.addHandler(file_handler)
 def main():
     logger.info('Andross started')
 
-    logger.info('Database initialized')
-
     bot.run(os.getenv('DISCORD_TOKEN'))
 
 
