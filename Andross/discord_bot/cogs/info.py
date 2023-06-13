@@ -22,7 +22,7 @@ class InfoCog(commands.Cog, name='Info'):
     @commands.command(name='git', help='Gives link to git repository')
     async def __showGit(self, ctx: commands.Context):
         embed = discord.Embed(title='Github',
-                              url=f'https://github.com/ConstObject/Andross',
+                              url=f'https://github.com/andross-ssbm/Andross',
                               description='Link to project repository.',
                               colour=discord.Colour.green())
         await ctx.send(embed=embed)
@@ -31,7 +31,7 @@ class InfoCog(commands.Cog, name='Info'):
     async def __showCreator(self, ctx: commands.Context):
         await ctx.send("```"
                        "Created by Sophia\n"
-                       "Discord: soph#8897\n"
+                       "Discord: sophimander\n"
                        "Twitter: https://twitter.com/Sophimander"
                        "```")
 
