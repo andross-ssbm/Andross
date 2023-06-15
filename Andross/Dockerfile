@@ -25,9 +25,6 @@ ENV API_KEY=<YOUR_API_KEY>
 ENV DISCORD_COMMAND_PREFIX=$
 ENV DISCORD_TOKEN=<YOUR_DISCORD_TOKEN>
 
-# Copy to /etc/environment
-RUN env >> /etc/environment
-
 # Create cron job to run create_snapshot.py, every 20 minutes and then every once a day at midnight, then run cron
 RUN crontab crontab
 RUN touch /var/log/cron.log
