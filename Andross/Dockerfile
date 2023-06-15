@@ -20,10 +20,7 @@ RUN pip install -r requirements.txt
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/Andross
-ENV API_URL=<YOUR_API_URL>
-ENV API_KEY=<YOUR_API_KEY>
 ENV DISCORD_COMMAND_PREFIX=$
-ENV DISCORD_TOKEN=<YOUR_DISCORD_TOKEN>
 
 # Create cron job to run create_snapshot.py, every 20 minutes and then every once a day at midnight, then run cron
 RUN crontab crontab
