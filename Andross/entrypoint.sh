@@ -1,8 +1,6 @@
 #!/bin/bash
 
 if [ "$1" == "start" ]; then
-    printenv >> /etc/environment
-    service cron start
     python3.10 -u main.py
 elif [ "$1" == "shell" ]; then
     /bin/bash

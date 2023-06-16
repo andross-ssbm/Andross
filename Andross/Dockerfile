@@ -22,10 +22,6 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/Andross
 ENV DISCORD_COMMAND_PREFIX=$
 
-# Create cron job to run create_snapshot.py, every 20 minutes and then every once a day at midnight, then run cron
-RUN crontab crontab
-RUN touch /var/log/cron.log
-
 RUN mv entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
