@@ -1,7 +1,7 @@
 import logging
 import math
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 
 import discord
 from discord.ext import commands
@@ -340,7 +340,8 @@ class StatsCog(commands.Cog, name='Stats'):
         if response.status_code != 200:
             logger.warning('Unable to get latest date')
         else:
-            latest_date = datetime.strptime(response.json()['entry_time'], '%Y-%m-%d %H:%M:%S.%f')
+            latest_date = datetime.strptime(response.json()['entry_time'], '%Y-%m-%d %H:%M:%S.%f')\
+                .replace(tzinfo=ZoneInfo('UTC'))
 
         leaderboard = format_leaderboard(leaderboard)
         logger.debug(f'leaderboard: {ctx.author}, {focus_me}')
