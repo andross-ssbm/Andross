@@ -8,11 +8,11 @@ ENV TZ=America/New_York
 RUN apt-get update
 RUN apt-get install -y git cron vim
 
-# Clone the git repository
-RUN git clone https://github.com/ConstObject/Andross.git
-
-# Set working directory to the cloned directory
+# Set working directory
 WORKDIR /Andross/Andross
+
+# Copy all files in current directory to image
+COPY . .
 
 # Update pip and install required dependencies
 RUN pip install --upgrade pip
