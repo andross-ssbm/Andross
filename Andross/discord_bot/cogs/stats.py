@@ -37,12 +37,18 @@ def format_leaderboard(leaderboard: dict) -> list[str]:
         base_whitespace = 13
         whitespace_amount_front = 2 if counter <= 9 else 1
         whitespace_amount = (base_whitespace - len(entry['name']))
+        if not entry['latest_wins'] and not entry['latest_losses']:
+            rank_name = 'None'
+        elif (int(entry['latest_wins']) + int(entry['latest_losses'])) < 5:
+            rank_name = 'Pending'
+        else:
+            rank_name = get_rank(entry['latest_elo'], entry['latest_dgp'])
         leaderboard_text.append(f"{entry['position']}."
                                 f"{generate_whitespace(whitespace_amount_front)}{entry['name']}"
                                 f"{generate_whitespace(whitespace_amount)}"
                                 f"| {format(entry['latest_elo'], '.1f')} "
                                 f"({entry['latest_wins']}/{entry['latest_losses']}) "
-                                f"{get_rank(entry['latest_elo'], entry['latest_dgp'])}")
+                                f"{rank_name}")
     return leaderboard_text
 
 
