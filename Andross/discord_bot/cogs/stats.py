@@ -372,7 +372,8 @@ class StatsCog(commands.Cog, name='Stats'):
         inital_description = '\n'.join([x for x in leaderboard[page_start:page_end]])
 
         lb_embed = discord.Embed(title='Leaderboard',
-                                 description=f'```{inital_description}```', colour=slippi_green)
+                                 description=f'```{inital_description}```', colour=slippi_green,
+                                 url=f'http://nerv.group/leaderboard')
         lb_embed.set_thumbnail(url='https://avatars.githubusercontent.com/u/45867030?s=200&v=4')
         lb_embed.set_footer(text=string_date)
         lb_view = LeaderboardView(lb_embed, leaderboard, string_date, pages, 0)
