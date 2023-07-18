@@ -27,6 +27,14 @@ class InfoCog(commands.Cog, name='Info'):
                               colour=discord.Colour.green())
         await ctx.send(embed=embed)
 
+    @commands.command(name='website', help='Gives link to website')
+    async def __showWebsite(self, ctx: commands.Context):
+        embed = discord.Embed(title='Andross',
+                              url=f'http://nerv.group/leaderboard',
+                              description='Website leaderboard',
+                              colour=discord.Colour.red())
+        await ctx.send(embed=embed)
+
     @commands.command(name='creator', help='Gives info about creator')
     async def __showCreator(self, ctx: commands.Context):
         await ctx.send("```"
