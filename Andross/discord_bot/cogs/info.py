@@ -30,7 +30,7 @@ class InfoCog(commands.Cog, name='Info'):
     @commands.command(name='website', help='Gives link to website')
     async def __showWebsite(self, ctx: commands.Context):
         embed = discord.Embed(title='Andross',
-                              url=f'http://nerv.group/leaderboard',
+                              url=f'https://andross.dev/leaderboard',
                               description='Website leaderboard',
                               colour=discord.Colour.red())
         await ctx.send(embed=embed)
